@@ -111,7 +111,17 @@
             STALL_WOOD: '#8b4513',
             KAABA_BLACK: '#111111',
             KAABA_GOLD: '#ffd700',
-            MARBLE: '#eeeeee'
+            MARBLE: '#eeeeee',
+            HAIR: '#3e2723',
+            SANDAL: '#5d4037',
+            IHRAM_SHADOW: '#dddddd',
+            WALL_CREAM: '#fdf5e6',
+            CARPET_RED: '#800000',
+            CARPET_PATTERN: '#a00000',
+            PILLAR_MARBLE: '#e0e0e0',
+            WINDOW_BLUE: '#446688',
+            RUG_GREEN: '#006400',
+            RUG_GOLD: '#ffd700'
         };
 
         // --- UTILS ---
@@ -197,15 +207,59 @@
             }
 
             drawPlayer(x, y, isIhram, isHairCut) {
-                const dx = x;
-                const dy = y;
-                this.rect(dx + 4, dy + 4, 8, 10, isIhram ? COLORS.WHITE : COLORS.SHIRT);
-                if (!isIhram) this.rect(dx + 4, dy + 10, 8, 6, COLORS.PANTS);
-                this.rect(dx + 5, dy, 6, 5, COLORS.SKIN);
-                if (!isHairCut) this.rect(dx + 5, dy, 6, 2, '#332200');
-                else this.rect(dx + 5, dy, 6, 1, '#332200');
-                this.rect(dx + 2, dy + 5, 2, 6, isIhram ? COLORS.WHITE : COLORS.SKIN);
-                this.rect(dx + 12, dy + 5, 2, 6, isIhram ? COLORS.WHITE : COLORS.SKIN);
+                const dx = Math.floor(x);
+                const dy = Math.floor(y);
+
+                // --- FEET & SANDALS ---
+                // Left foot
+                this.rect(dx + 4, dy + 14, 3, 2, COLORS.SKIN);
+                this.rect(dx + 4, dy + 15, 3, 1, COLORS.SANDAL);
+                // Right foot
+                this.rect(dx + 9, dy + 14, 3, 2, COLORS.SKIN);
+                this.rect(dx + 9, dy + 15, 3, 1, COLORS.SANDAL);
+
+                // --- BODY ---
+                if (isIhram) {
+                    // Main white garment
+                    this.rect(dx + 3, dy + 6, 10, 9, COLORS.WHITE);
+                    // Draping/Shadow details
+                    this.rect(dx + 3, dy + 8, 2, 1, COLORS.IHRAM_SHADOW);
+                    this.rect(dx + 11, dy + 10, 2, 1, COLORS.IHRAM_SHADOW);
+                    this.rect(dx + 4, dy + 12, 8, 1, COLORS.IHRAM_SHADOW);
+                } else {
+                    // Normal clothes (Shirt + Pants)
+                    this.rect(dx + 3, dy + 6, 10, 6, COLORS.SHIRT);
+                    this.rect(dx + 4, dy + 12, 8, 3, COLORS.PANTS);
+                }
+
+                // --- ARMS ---
+                // Left arm
+                this.rect(dx + 1, dy + 6, 3, 6, COLORS.SKIN);
+                // Right arm
+                this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN);
+
+                // --- HEAD ---
+                // Face base
+                this.rect(dx + 4, dy, 8, 7, COLORS.SKIN);
+
+                // Hair
+                if (!isHairCut) {
+                    this.rect(dx + 4, dy, 8, 2, COLORS.HAIR); // Top hair
+                    this.rect(dx + 3, dy + 1, 1, 3, COLORS.HAIR); // Sideburn L
+                    this.rect(dx + 12, dy + 1, 1, 3, COLORS.HAIR); // Sideburn R
+                } else {
+                    this.rect(dx + 4, dy, 8, 1, COLORS.HAIR); // Stubble
+                }
+
+                // Eyes
+                this.rect(dx + 5, dy + 3, 2, 2, COLORS.BLACK);
+                this.rect(dx + 9, dy + 3, 2, 2, COLORS.BLACK);
+
+                // Beard
+                if (!isHairCut) {
+                    this.rect(dx + 4, dy + 5, 8, 2, COLORS.HAIR);
+                    this.rect(dx + 5, dy + 7, 6, 1, COLORS.HAIR);
+                }
             }
 
             drawCloud(x, y) {
@@ -342,9 +396,80 @@
                 }
             }
             draw(renderer) {
-                renderer.clear('#a08060');
-                renderer.rect(this.rug.x, this.rug.y, this.rug.w, this.rug.h, COLORS.RUG_RED);
-                renderer.rect(this.rug.x + 2, this.rug.y + 2, this.rug.w - 4, this.rug.h - 4, COLORS.RUG_DETAIL);
+                // 1. Floor (Carpet)
+                renderer.clear(COLORS.CARPET_RED);
+                // Carpet rows (Saff)
+                for (let y = 50; y < this.mapH; y += 20) {
+                    renderer.rect(0, y, this.mapW, 2, COLORS.CARPET_PATTERN);
+                }
+
+                // 2. Walls
+                // Back wall
+                renderer.rect(0, 0, this.mapW, 40, COLORS.WALL_CREAM);
+                // Decorative stripe on wall
+                renderer.rect(0, 30, this.mapW, 2, '#d4c5b0');
+
+                // Mihrab (Niche) - Centered
+                const mx = this.mapW / 2 - 12;
+                const my = 10;
+                renderer.rect(mx, my, 24, 30, '#d4c5b0'); // Outline
+                renderer.rect(mx + 2, my + 4, 20, 26, '#e0d0b0'); // Inner
+                renderer.rect(mx + 4, my + 8, 16, 22, '#c0b090'); // Deep niche
+                // Arch top for Mihrab
+                renderer.rect(mx + 4, my + 8, 2, 2, '#a09070');
+                renderer.rect(mx + 18, my + 8, 2, 2, '#a09070');
+                renderer.rect(mx + 6, my + 6, 12, 2, '#a09070');
+
+                // Windows/Arches on back wall (Skip center for Mihrab)
+                for (let i = 10; i < this.mapW; i += 40) {
+                    if (Math.abs(i - (this.mapW / 2 - 10)) < 30) continue; // Skip if near Mihrab
+                    renderer.rect(i, 5, 20, 25, '#d4c5b0'); // Arch outline
+                    renderer.rect(i + 2, 7, 16, 23, COLORS.WINDOW_BLUE); // Window pane
+                    renderer.rect(i + 10, 7, 1, 23, '#334455'); // Bar V
+                    renderer.rect(i + 2, 18, 16, 1, '#334455'); // Bar H
+                }
+
+                // 3. Pillars
+                const pillarY = 35;
+                for (let i = 30; i < this.mapW; i += 60) {
+                    if (Math.abs(i - (this.mapW / 2)) < 20) continue; // Don't block Mihrab view
+                    // Base
+                    renderer.rect(i - 4, pillarY + 80, 16, 8, '#c0c0c0');
+                    // Shaft
+                    renderer.rect(i, 0, 8, pillarY + 80, COLORS.PILLAR_MARBLE);
+                    // Detail lines
+                    renderer.rect(i + 2, 0, 1, pillarY + 80, '#f0f0f0');
+                    renderer.rect(i + 5, 0, 1, pillarY + 80, '#cccccc');
+                }
+
+                // 4. Interaction Rug (The specific one for Niyyah)
+                // Fringes
+                renderer.rect(this.rug.x, this.rug.y - 2, this.rug.w, 2, COLORS.RUG_GOLD);
+                renderer.rect(this.rug.x, this.rug.y + this.rug.h, this.rug.w, 2, COLORS.RUG_GOLD);
+
+                // Base
+                renderer.rect(this.rug.x, this.rug.y, this.rug.w, this.rug.h, COLORS.RUG_GREEN);
+
+                // Inner Arch Design
+                renderer.rect(this.rug.x + 3, this.rug.y + 3, 2, this.rug.h - 6, '#008000'); // Left border
+                renderer.rect(this.rug.x + this.rug.w - 5, this.rug.y + 3, 2, this.rug.h - 6, '#008000'); // Right border
+                renderer.rect(this.rug.x + 3, this.rug.y + 3, this.rug.w - 6, 2, '#008000'); // Top border
+                renderer.rect(this.rug.x + 3, this.rug.y + this.rug.h - 5, this.rug.w - 6, 2, '#008000'); // Bottom border
+
+                // Arch top
+                renderer.rect(this.rug.x + 5, this.rug.y + 6, this.rug.w - 10, 2, COLORS.RUG_GOLD);
+                renderer.rect(this.rug.x + 8, this.rug.y + 4, this.rug.w - 16, 2, COLORS.RUG_GOLD);
+
+                // Highlight if player is close
+                const p = this.game.player;
+                const r = this.rug;
+                if (p.x < r.x + r.w + 10 && p.x + p.w > r.x - 10 &&
+                    p.y < r.y + r.h + 10 && p.y + p.h > r.y - 10) {
+                    renderer.rect(this.rug.x - 2, this.rug.y - 2, this.rug.w + 4, 2, '#ffd700');
+                    renderer.rect(this.rug.x - 2, this.rug.y + this.rug.h, this.rug.w + 4, 2, '#ffd700');
+                    renderer.rect(this.rug.x - 2, this.rug.y, 2, this.rug.h, '#ffd700');
+                    renderer.rect(this.rug.x + this.rug.w, this.rug.y, 2, this.rug.h, '#ffd700');
+                }
             }
         }
 
