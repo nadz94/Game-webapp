@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Pixel Hajj Journey</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            border: 4px solid #555;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        #ui-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.85);
+            border-top: 2px solid #fff;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #message-box {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            color: #ffd700;
+            text-shadow: 1px 1px 0 #000;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="640" height="480"></canvas>
+        <div id="hud"></div>
+        <div id="ui-layer">
+            <div id="message-box">Welcome to The Pixel Hajj Journey. Press SPACE to start.</div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * THE PIXEL HAJJ JOURNEY
+         * A single-file HTML5 Canvas RPG.
+         */
+
+        // --- CONSTANTS & CONFIG ---
+        const SCALE = 4;
+        const TILE_SIZE = 16;
+        const SCREEN_W = 640;
+        const SCREEN_H = 480;
+        const LOGICAL_W = SCREEN_W / SCALE;
+        const LOGICAL_H = SCREEN_H / SCALE;
+
+        const COLORS = {
+            SAND: '#e0c068',
+            SAND_DARK: '#c0a050',
+            SKY_DAY: '#4080ff',
+            SKY_NIGHT: '#101030',
+            WHITE: '#ffffff',
+            BLACK: '#000000',
+            SKIN: '#ffccaa',
+            SHIRT: '#4488cc',
+            PANTS: '#333333',
+            MOUNTAIN: '#606060',
+            MOUNTAIN_DARK: '#404040',
+            TEXT_BOX_BG: 'rgba(0,0,0,0.8)',
+            TENT_SHADOW: 'rgba(0,0,0,0.2)',
+            RUG_RED: '#880000',
+            RUG_DETAIL: '#cc0000',
+            PEBBLE: '#888888',
+            PILLAR: '#777777',
+            STALL_WOOD: '#8b4513',
+            KAABA_BLACK: '#111111',
+            KAABA_GOLD: '#ffd700',
+            MARBLE: '#eeeeee'
+        };
+
+        // --- UTILS ---
+        function lerpColor(a, b, amount) {
+            var ah = parseInt(a.replace(/#/g, ''), 16),
+                ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+                bh = parseInt(b.replace(/#/g, ''), 16),
+                br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+                rr = ar + amount * (br - ar),
+                rg = ag + amount * (bg - ag),
+                rb = ab + amount * (bb - ab);
+
+            return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+        }
+
+        // --- INPUT HANDLING ---
+        class Input {
+            constructor() {
+                this.keys = {};
+                this.prevKeys = {};
+
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                        e.preventDefault();
+                    }
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+            }
+
+            update() {
+                this.prevKeys = { ...this.keys };
+            }
+
+            isDown(code) {
+                return !!this.keys[code];
+            }
+
+            isJustPressed(code) {
+                return !!this.keys[code] && !this.prevKeys[code];
+            }
+        }
+
+        // --- CAMERA ---
+        class Camera {
+            constructor(width, height) {
+                this.x = 0;
+                this.y = 0;
+                this.width = width;
+                this.height = height;
+            }
+
+            follow(target, mapW, mapH) {
+                this.x = target.x - this.width / 2 + target.w / 2;
+                this.y = target.y - this.height / 2 + target.h / 2;
+                this.x = Math.max(0, Math.min(this.x, mapW - this.width));
+                this.y = Math.max(0, Math.min(this.y, mapH - this.height));
+            }
+        }
+
+        // --- RENDERER ---
+        class Renderer {
+            constructor(ctx) {
+                this.ctx = ctx;
+                this.camera = { x: 0, y: 0 };
+            }
+
+            setCamera(camera) {
+                this.camera = camera;
+            }
+
+            clear(color) {
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+            }
+
+            rect(x, y, w, h, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(Math.floor(x - this.camera.x), Math.floor(y - this.camera.y), w, h);
+            }
+
+            drawPlayer(x, y, isIhram, isHairCut) {
+                const dx = x;
+                const dy = y;
+                this.rect(dx + 4, dy + 4, 8, 10, isIhram ? COLORS.WHITE : COLORS.SHIRT);
+                if (!isIhram) this.rect(dx + 4, dy + 10, 8, 6, COLORS.PANTS);
+                this.rect(dx + 5, dy, 6, 5, COLORS.SKIN);
+                if (!isHairCut) this.rect(dx + 5, dy, 6, 2, '#332200');
+                else this.rect(dx + 5, dy, 6, 1, '#332200');
+                this.rect(dx + 2, dy + 5, 2, 6, isIhram ? COLORS.WHITE : COLORS.SKIN);
+                this.rect(dx + 12, dy + 5, 2, 6, isIhram ? COLORS.WHITE : COLORS.SKIN);
+            }
+
+            drawCloud(x, y) {
+                this.rect(x + 10, y, 30, 10, '#fff');
+                this.rect(x, y + 5, 20, 10, '#fff');
+                this.rect(x + 25, y + 5, 20, 10, '#fff');
+            }
+
+            drawTent(x, y) {
+                this.rect(x + 2, y + 8, 28, 20, COLORS.WHITE);
+                this.rect(x + 8, y, 16, 8, COLORS.WHITE);
+                this.rect(x + 4, y + 4, 24, 4, COLORS.WHITE);
+                this.rect(x + 12, y + 18, 8, 10, '#dddddd');
+                this.rect(x + 2, y + 28, 28, 2, COLORS.TENT_SHADOW);
+            }
+
+            drawMountain(x, y, w, h) {
+                this.rect(x, y, w, h, COLORS.MOUNTAIN);
+                this.rect(x + 5, y + 5, w - 10, h - 5, COLORS.MOUNTAIN_DARK);
+            }
+
+            drawPillar(x, y, w, h) {
+                this.rect(x, y, w, h, COLORS.PILLAR);
+                this.rect(x + 2, y + 2, w - 4, h - 4, '#999999');
+            }
+
+            drawStall(x, y, type) {
+                this.rect(x, y, 40, 30, COLORS.STALL_WOOD);
+                this.rect(x + 5, y + 5, 30, 20, '#000');
+                if (type === 'animal') {
+                    this.rect(x + 15, y - 10, 10, 10, '#fff');
+                    this.rect(x + 17, y - 8, 6, 6, '#f00');
+                } else if (type === 'scissors') {
+                    this.rect(x + 15, y - 10, 10, 10, '#fff');
+                    this.rect(x + 16, y - 8, 8, 2, '#000');
+                    this.rect(x + 16, y - 8, 2, 8, '#000');
+                }
+            }
+
+            drawKaaba(x, y) {
+                // Base
+                this.rect(x, y, 64, 64, COLORS.KAABA_BLACK);
+                // Gold stripe
+                this.rect(x, y + 10, 64, 8, COLORS.KAABA_GOLD);
+                // Door area
+                this.rect(x + 40, y + 30, 12, 20, '#332200');
+            }
+        }
+
+        // --- GAME ENTITIES ---
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.w = 16;
+                this.h = 16;
+                this.speed = 1.5;
+                this.isIhram = false;
+                this.isHairCut = false;
+            }
+
+            update(input, solids, mapW, mapH) {
+                let dx = 0;
+                let dy = 0;
+
+                if (input.isDown('ArrowUp')) dy -= this.speed;
+                if (input.isDown('ArrowDown')) dy += this.speed;
+                if (input.isDown('ArrowLeft')) dx -= this.speed;
+                if (input.isDown('ArrowRight')) dx += this.speed;
+
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.707;
+                    dy *= 0.707;
+                }
+
+                this.x += dx;
+                if (this.checkCollision(solids)) this.x -= dx;
+
+                this.y += dy;
+                if (this.checkCollision(solids)) this.y -= dy;
+
+                this.x = Math.max(0, Math.min(this.x, mapW - this.w));
+                this.y = Math.max(0, Math.min(this.y, mapH - this.h));
+            }
+
+            checkCollision(solids) {
+                for (let s of solids) {
+                    if (this.x < s.x + s.w &&
+                        this.x + this.w > s.x &&
+                        this.y < s.y + s.h &&
+                        this.y + this.h > s.y) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        // --- STAGES ---
+        class Stage {
+            constructor(game) {
+                this.game = game;
+                this.solids = [];
+                this.mapW = LOGICAL_W;
+                this.mapH = LOGICAL_H;
+            }
+            enter() { }
+            update() { }
+            draw(renderer) { }
+            exit() { }
+        }
+
+        class StageMeeqat extends Stage {
+            constructor(game) {
+                super(game);
+                this.rug = { x: 60, y: 60, w: 20, h: 30 };
+            }
+            enter() {
+                this.game.player.x = 20;
+                this.game.player.y = 60;
+                this.game.ui.setMessage("Stage 1: The Meeqat. Walk to the rug and press SPACE to make Niyyah.");
+                this.game.ui.setHUD("");
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    const p = this.game.player;
+                    const r = this.rug;
+                    if (p.x < r.x + r.w + 10 && p.x + p.w > r.x - 10 &&
+                        p.y < r.y + r.h + 10 && p.y + p.h > r.y - 10) {
+                        this.game.player.isIhram = true;
+                        this.game.ui.setMessage("Ihram donned. Intention made. Go forth!");
+                        setTimeout(() => { this.game.changeStage(new StageMina(this.game)); }, 2000);
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear('#a08060');
+                renderer.rect(this.rug.x, this.rug.y, this.rug.w, this.rug.h, COLORS.RUG_RED);
+                renderer.rect(this.rug.x + 2, this.rug.y + 2, this.rug.w - 4, this.rug.h - 4, COLORS.RUG_DETAIL);
+            }
+        }
+
+        class StageMina extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 400;
+                this.mapH = 400;
+                this.tents = [];
+                this.prayers = 0;
+                this.maxPrayers = 5;
+                for (let i = 0; i < 20; i++) {
+                    this.tents.push({
+                        x: Math.random() * (this.mapW - 40),
+                        y: Math.random() * (this.mapH - 40),
+                        w: 32, h: 32,
+                        isTarget: false,
+                        visited: false
+                    });
+                }
+                let targets = 0;
+                while (targets < 5) {
+                    let t = this.tents[Math.floor(Math.random() * this.tents.length)];
+                    if (!t.isTarget) { t.isTarget = true; targets++; }
+                }
+                this.solids = [];
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 10;
+                this.game.ui.setMessage("Stage 2: Mina. Find 5 tents with rugs and Pray (SPACE).");
+                this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    const p = this.game.player;
+                    let found = false;
+                    for (let t of this.tents) {
+                        if (t.isTarget && !t.visited &&
+                            p.x < t.x + t.w && p.x + p.w > t.x &&
+                            p.y < t.y + t.h && p.y + p.h > t.y) {
+                            t.visited = true;
+                            this.prayers++;
+                            this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
+                            this.game.ui.setMessage("You perform the prayer.");
+                            found = true;
+                            if (this.prayers >= this.maxPrayers) {
+                                this.game.ui.setMessage("All prayers done. Proceeding to Arafah...");
+                                setTimeout(() => { this.game.changeStage(new StageArafah(this.game)); }, 2000);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SAND);
+                for (let t of this.tents) {
+                    renderer.drawTent(t.x, t.y);
+                    if (t.isTarget && !t.visited) renderer.rect(t.x + 12, t.y + 25, 8, 4, COLORS.RUG_RED);
+                }
+            }
+        }
+
+        class StageArafah extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 300;
+                this.mapH = 300;
+                this.mountain = { x: 100, y: 100, w: 100, h: 80 };
+                this.reflectionProgress = 0;
+                this.maxReflection = 100;
+                this.time = 0;
+                this.clouds = [
+                    { x: 20, y: 20 }, { x: 150, y: 40 }, { x: 250, y: 10 }
+                ];
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 250;
+                this.game.ui.setMessage("Stage 3: Arafah. Stand near Mount Mercy and hold SPACE to Reflect.");
+                this.game.ui.setHUD("Reflection: 0%");
+            }
+            update() {
+                this.time += 0.0005;
+                if (this.time > 1) this.time = 1;
+                const p = this.game.player;
+                const m = this.mountain;
+                const nearMountain = (p.x < m.x + m.w + 20 && p.x + p.w > m.x - 20 &&
+                    p.y < m.y + m.h + 20 && p.y + p.h > m.y - 20);
+                if (nearMountain && this.game.input.isDown('Space')) {
+                    this.reflectionProgress += 0.5;
+                    if (this.reflectionProgress > this.maxReflection) this.reflectionProgress = this.maxReflection;
+                    this.game.ui.setHUD(`Reflection: ${Math.floor(this.reflectionProgress)}%`);
+                    if (this.reflectionProgress >= this.maxReflection) {
+                        this.game.ui.setMessage("Sun sets on Arafah. Proceeding to Muzdalifah...");
+                        setTimeout(() => { this.game.changeStage(new StageMuzdalifah(this.game)); }, 2000);
+                    }
+                }
+
+                // Move clouds
+                for (let c of this.clouds) {
+                    c.x += 0.1;
+                    if (c.x > this.mapW) c.x = -50;
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SAND);
+                renderer.drawMountain(this.mountain.x, this.mountain.y, this.mountain.w, this.mountain.h);
+
+                // Clouds
+                for (let c of this.clouds) {
+                    renderer.drawCloud(c.x, c.y);
+                }
+
+                if (this.game.input.isDown('Space')) {
+                    renderer.rect(this.game.player.x, this.game.player.y - 10, 16, 4, '#000');
+                    renderer.rect(this.game.player.x, this.game.player.y - 10, 16 * (this.reflectionProgress / this.maxReflection), 4, '#0f0');
+                }
+                if (this.time > 0.5) {
+                    renderer.ctx.fillStyle = `rgba(255, 100, 0, ${(this.time - 0.5) * 0.5})`;
+                    renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+                }
+            }
+        }
+
+        class StageMuzdalifah extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 300;
+                this.mapH = 300;
+                this.pebbles = [];
+                this.collected = 0;
+                this.target = 7;
+                for (let i = 0; i < 15; i++) {
+                    this.pebbles.push({
+                        x: Math.random() * (this.mapW - 10),
+                        y: Math.random() * (this.mapH - 10),
+                        w: 4, h: 4,
+                        active: true
+                    });
+                }
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 10;
+                this.game.ui.setMessage("Stage 4: Muzdalifah. Collect 7 pebbles (SPACE).");
+                this.game.ui.setHUD(`Pebbles: 0/${this.target}`);
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    const p = this.game.player;
+                    for (let peb of this.pebbles) {
+                        if (peb.active &&
+                            p.x < peb.x + peb.w + 10 && p.x + p.w > peb.x - 10 &&
+                            p.y < peb.y + peb.h + 10 && p.y + p.h > peb.y - 10) {
+                            peb.active = false;
+                            this.collected++;
+                            this.game.ui.setHUD(`Pebbles: ${this.collected}/${this.target}`);
+                            if (this.collected >= this.target) {
+                                this.game.ui.setMessage("Pebbles collected. To Jamarat!");
+                                setTimeout(() => { this.game.changeStage(new StageJamarat(this.game)); }, 2000);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SKY_NIGHT);
+                for (let i = 0; i < 20; i++) renderer.rect(i * 15, (i * 23) % 200, 1, 1, '#fff');
+                for (let peb of this.pebbles) {
+                    if (peb.active) renderer.rect(peb.x, peb.y, peb.w, peb.h, COLORS.PEBBLE);
+                }
+            }
+        }
+
+        class StageJamarat extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 300;
+                this.mapH = 300;
+                this.pillars = [
+                    { x: 100, y: 50, w: 20, h: 40, size: 'small' },
+                    { x: 150, y: 120, w: 30, h: 50, size: 'medium' },
+                    { x: 200, y: 200, w: 40, h: 60, size: 'large', isTarget: true }
+                ];
+                this.solids = this.pillars;
+                this.stonesThrown = 0;
+                this.target = 7;
+                this.projectiles = [];
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 250;
+                this.game.ui.setMessage("Stage 5: Jamarat. Throw 7 stones at the LARGEST pillar (SPACE).");
+                this.game.ui.setHUD(`Thrown: 0/${this.target}`);
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    this.projectiles.push({
+                        x: this.game.player.x + 8,
+                        y: this.game.player.y + 8,
+                        vx: 2, vy: -2,
+                        target: this.pillars[2]
+                    });
+                }
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    let p = this.projectiles[i];
+                    let tx = p.target.x + p.target.w / 2;
+                    let ty = p.target.y + p.target.h / 2;
+                    p.x += (tx - p.x) * 0.1;
+                    p.y += (ty - p.y) * 0.1;
+                    if (Math.abs(p.x - tx) < 5 && Math.abs(p.y - ty) < 5) {
+                        this.projectiles.splice(i, 1);
+                        this.stonesThrown++;
+                        this.game.ui.setHUD(`Thrown: ${this.stonesThrown}/${this.target}`);
+                        if (this.stonesThrown >= this.target) {
+                            this.game.ui.setMessage("Stoning complete. Proceed to Sacrifice.");
+                            setTimeout(() => { this.game.changeStage(new StageSacrifice(this.game)); }, 2000);
+                        }
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SAND);
+                for (let p of this.pillars) {
+                    renderer.drawPillar(p.x, p.y, p.w, p.h);
+                }
+                for (let p of this.projectiles) {
+                    renderer.rect(p.x, p.y, 3, 3, COLORS.PEBBLE);
+                }
+            }
+        }
+
+        class StageSacrifice extends Stage {
+            constructor(game) {
+                super(game);
+                this.stalls = [
+                    { x: 50, y: 50, type: 'animal', done: false },
+                    { x: 150, y: 50, type: 'scissors', done: false }
+                ];
+            }
+            enter() {
+                this.game.player.x = 100;
+                this.game.player.y = 100;
+                this.game.ui.setMessage("Stage 6: Sacrifice & Halq. Visit the Animal stall then the Barber.");
+                this.game.ui.setHUD("");
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    const p = this.game.player;
+                    for (let s of this.stalls) {
+                        if (!s.done &&
+                            p.x < s.x + 40 + 10 && p.x + p.w > s.x - 10 &&
+                            p.y < s.y + 30 + 10 && p.y + p.h > s.y - 10) {
+                            s.done = true;
+                            if (s.type === 'animal') {
+                                this.game.ui.setMessage("Sacrifice performed.");
+                            } else if (s.type === 'scissors') {
+                                this.game.player.isHairCut = true;
+                                this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
+                                setTimeout(() => { this.game.changeStage(new StageGrandMosque(this.game)); }, 2000);
+                            }
+                        }
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SAND);
+                for (let s of this.stalls) {
+                    renderer.drawStall(s.x, s.y, s.type);
+                    if (s.done) renderer.rect(s.x + 15, s.y + 35, 10, 4, '#0f0');
+                }
+            }
+        }
+
+        class StageGrandMosque extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 400;
+                this.mapH = 400;
+                this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
+                this.solids = [this.kaaba];
+
+                // Tawaf Checkpoints (Corners)
+                this.checkpoints = [
+                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 0 }, // Top Left
+                    { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
+                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 2 }, // Bottom Right
+                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left
+                ];
+                this.currentCheckpoint = 0;
+                this.laps = 0;
+                this.maxLaps = 7;
+                this.mode = 'tawaf'; // tawaf or sai
+
+                // Sa'i Points
+                this.safa = { x: 50, y: 300, w: 30, h: 30, name: 'Safa' };
+                this.marwa = { x: 350, y: 300, w: 30, h: 30, name: 'Marwa' };
+                this.saiTrips = 0;
+                this.maxSai = 7;
+                this.targetHill = this.safa;
+            }
+
+            enter() {
+                this.game.player.x = 100;
+                this.game.player.y = 100;
+                this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps around Kaaba).");
+                this.game.ui.setHUD(`Tawaf: 0/${this.maxLaps}`);
+            }
+
+            update() {
+                const p = this.game.player;
+
+                if (this.mode === 'tawaf') {
+                    // Check checkpoints
+                    let cp = this.checkpoints[this.currentCheckpoint];
+                    if (p.x < cp.x + cp.w && p.x + p.w > cp.x &&
+                        p.y < cp.y + cp.h && p.y + p.h > cp.y) {
+
+                        this.currentCheckpoint++;
+                        if (this.currentCheckpoint > 3) {
+                            this.currentCheckpoint = 0;
+                            this.laps++;
+                            this.game.ui.setHUD(`Tawaf: ${this.laps}/${this.maxLaps}`);
+                            if (this.laps >= this.maxLaps) {
+                                this.mode = 'sai';
+                                this.game.ui.setMessage("Tawaf complete. Perform Sa'i (Walk between Safa and Marwa).");
+                                this.game.ui.setHUD(`Sa'i: 0/${this.maxSai}`);
+                            }
+                        }
+                    }
+                } else if (this.mode === 'sai') {
+                    let t = this.targetHill;
+                    if (p.x < t.x + t.w && p.x + p.w > t.x &&
+                        p.y < t.y + t.h && p.y + p.h > t.y) {
+
+                        this.saiTrips++;
+                        this.game.ui.setHUD(`Sa'i: ${this.saiTrips}/${this.maxSai}`);
+
+                        if (this.saiTrips >= this.maxSai) {
+                            this.game.ui.setMessage("Sa'i complete. One final Farewell Tawaf.");
+                            setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                        } else {
+                            this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
+                            this.game.ui.setMessage(`Go to ${this.targetHill.name}.`);
+                        }
+                    }
+                }
+            }
+
+            draw(renderer) {
+                renderer.clear(COLORS.MARBLE);
+                renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
+
+                if (this.mode === 'sai') {
+                    renderer.rect(this.safa.x, this.safa.y, this.safa.w, this.safa.h, '#888'); // Hill
+                    renderer.rect(this.marwa.x, this.marwa.y, this.marwa.w, this.marwa.h, '#888'); // Hill
+
+                    // Highlight target
+                    let t = this.targetHill;
+                    renderer.rect(t.x, t.y - 10, t.w, 5, '#0f0');
+                }
+            }
+        }
+
+        class StageFarewell extends Stage {
+            constructor(game) {
+                super(game);
+                this.mapW = 400;
+                this.mapH = 400;
+                this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
+                this.solids = [this.kaaba];
+                this.checkpoints = [
+                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 0 },
+                    { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 },
+                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 2 },
+                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }
+                ];
+                this.currentCheckpoint = 0;
+                this.laps = 0;
+            }
+            enter() {
+                this.game.player.x = 100;
+                this.game.player.y = 100;
+                this.game.ui.setMessage("Stage 8: Farewell Tawaf. One last lap.");
+                this.game.ui.setHUD("Farewell: 0/1");
+            }
+            update() {
+                const p = this.game.player;
+                let cp = this.checkpoints[this.currentCheckpoint];
+                if (p.x < cp.x + cp.w && p.x + p.w > cp.x &&
+                    p.y < cp.y + cp.h && p.y + p.h > cp.y) {
+                    this.currentCheckpoint++;
+                    if (this.currentCheckpoint > 3) {
+                        this.currentCheckpoint = 0;
+                        this.laps++;
+                        this.game.ui.setHUD("Farewell: 1/1");
+                        this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");
+                        // End state
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.MARBLE);
+                renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
+                if (this.laps >= 1) {
+                    renderer.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+                    renderer.ctx.fillStyle = '#fff';
+                    renderer.ctx.font = '10px "Press Start 2P"';
+                    renderer.ctx.fillText("HAJJ MUBARAK", LOGICAL_W / 2 - 40, LOGICAL_H / 2);
+                }
+            }
+        }
+
+        // --- MAIN GAME CLASS ---
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+
+                this.ctx.scale(SCALE, SCALE);
+                this.ctx.imageSmoothingEnabled = false;
+
+                this.input = new Input();
+                this.renderer = new Renderer(this.ctx);
+                this.camera = new Camera(LOGICAL_W, LOGICAL_H);
+                this.player = new Player(10, 10);
+
+                this.ui = {
+                    setMessage: (msg) => {
+                        document.getElementById('message-box').innerText = msg;
+                    },
+                    setHUD: (msg) => {
+                        document.getElementById('hud').innerText = msg;
+                    }
+                };
+
+                this.currentStage = new StageMeeqat(this);
+                this.currentStage.enter();
+
+                this.lastTime = 0;
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+
+            changeStage(newStage) {
+                this.currentStage.exit();
+                this.currentStage = newStage;
+                this.currentStage.enter();
+            }
+
+            loop(timestamp) {
+                const dt = timestamp - this.lastTime;
+                this.lastTime = timestamp;
+
+                this.currentStage.update();
+                this.player.update(this.input, this.currentStage.solids, this.currentStage.mapW, this.currentStage.mapH);
+                this.camera.follow(this.player, this.currentStage.mapW, this.currentStage.mapH);
+                this.renderer.setCamera(this.camera);
+                this.input.update();
+
+                this.currentStage.draw(this.renderer);
+                this.renderer.drawPlayer(this.player.x, this.player.y, this.player.isIhram, this.player.isHairCut);
+
+                requestAnimationFrame(this.loop);
+            }
+        }
+
+        window.onload = () => {
+            const game = new Game();
+        };
+
+    </script>
+</body>
+
+</html>
