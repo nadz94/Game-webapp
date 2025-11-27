@@ -1113,15 +1113,15 @@
                 this.mapH = 300;
 
                 // Animal Pen (left side)
-                this.pen = { x: 20, y: 180, w: 100, h: 80 };
+                this.pen = { x: 20, y: 140, w: 100, h: 80 };
                 this.animals = [
-                    { x: 40, y: 200, w: 12, h: 8, id: 1, following: false },
-                    { x: 80, y: 220, w: 12, h: 8, id: 2, following: false },
-                    { x: 60, y: 190, w: 12, h: 8, id: 3, following: false }
+                    { x: 40, y: 160, w: 12, h: 8, id: 1, following: false },
+                    { x: 80, y: 180, w: 12, h: 8, id: 2, following: false },
+                    { x: 60, y: 150, w: 12, h: 8, id: 3, following: false }
                 ];
 
                 // Sacrifice Zone (right side, same y-axis)
-                this.sacrificeZone = { x: 280, y: 40, w: 60, h: 60 };
+                this.sacrificeZone = { x: 320, y: 140, w: 60, h: 60 };
 
                 // Barber Stall (centered between pen and sacrifice zone, same y-axis)
                 const barberX = (this.pen.x + this.pen.w + this.sacrificeZone.x) / 2 - 20; // Center and adjust for width
