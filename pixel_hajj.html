@@ -121,7 +121,11 @@
             PILLAR_MARBLE: '#e0e0e0',
             WINDOW_BLUE: '#446688',
             RUG_GREEN: '#006400',
-            RUG_GOLD: '#ffd700'
+            RUG_GOLD: '#ffd700',
+            TENT_PEAK: '#f0f0f0',
+            TENT_SIDE: '#e0e0e0',
+            ROPE: '#8b4513',
+            PAVEMENT: '#a0a0a0'
         };
 
         // --- UTILS ---
@@ -206,9 +210,24 @@
                 this.ctx.fillRect(Math.floor(x - this.camera.x), Math.floor(y - this.camera.y), w, h);
             }
 
-            drawPlayer(x, y, isIhram, isHairCut) {
+            drawPlayer(x, y, isIhram, isHairCut, pose = 'stand') {
                 const dx = Math.floor(x);
                 const dy = Math.floor(y);
+
+                if (pose === 'sleep') {
+                    // Sleeping Pose (Lying down)
+                    // Body (Horizontal)
+                    if (isIhram) {
+                        this.rect(dx, dy + 8, 14, 6, COLORS.WHITE);
+                    } else {
+                        this.rect(dx, dy + 8, 14, 6, COLORS.SHIRT);
+                    }
+                    // Head
+                    this.rect(dx - 4, dy + 6, 6, 6, COLORS.SKIN);
+                    // Closed Eyes (Eyelids)
+                    this.rect(dx - 2, dy + 8, 2, 1, COLORS.SKIN);
+                    return;
+                }
 
                 // --- FEET & SANDALS ---
                 // Left foot
@@ -222,6 +241,10 @@
                 if (isIhram) {
                     // Main white garment
                     this.rect(dx + 3, dy + 6, 10, 9, COLORS.WHITE);
+                    // Idtiba (Right shoulder bare, Left covered)
+                    // Expose top-right of body block to skin
+                    this.rect(dx + 10, dy + 6, 3, 3, COLORS.SKIN);
+
                     // Draping/Shadow details
                     this.rect(dx + 3, dy + 8, 2, 1, COLORS.IHRAM_SHADOW);
                     this.rect(dx + 11, dy + 10, 2, 1, COLORS.IHRAM_SHADOW);
@@ -233,10 +256,33 @@
                 }
 
                 // --- ARMS ---
-                // Left arm
-                this.rect(dx + 1, dy + 6, 3, 6, COLORS.SKIN);
-                // Right arm
-                this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN);
+                if (pose === 'pray') {
+                    // Arms raised
+                    this.rect(dx + 0, dy + 2, 3, 6, COLORS.SKIN); // Left arm up
+                    this.rect(dx + 13, dy + 2, 3, 6, COLORS.SKIN); // Right arm up
+
+                    // Full sleeves when not in Ihram (raised)
+                    if (!isIhram) {
+                        this.rect(dx + 0, dy + 2, 3, 6, COLORS.SHIRT); // Left sleeve
+                        this.rect(dx + 13, dy + 2, 3, 6, COLORS.SHIRT); // Right sleeve
+                        // Show hands
+                        this.rect(dx + 0, dy + 6, 3, 2, COLORS.SKIN); // Left hand
+                        this.rect(dx + 13, dy + 6, 3, 2, COLORS.SKIN); // Right hand
+                    }
+                } else {
+                    // Arms down
+                    this.rect(dx + 1, dy + 6, 3, 6, COLORS.SKIN); // Left arm
+                    this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN); // Right arm
+
+                    // Full sleeves when not in Ihram (down)
+                    if (!isIhram) {
+                        this.rect(dx + 1, dy + 6, 3, 6, COLORS.SHIRT); // Left sleeve
+                        this.rect(dx + 12, dy + 6, 3, 6, COLORS.SHIRT); // Right sleeve
+                        // Show hands
+                        this.rect(dx + 1, dy + 10, 3, 2, COLORS.SKIN); // Left hand
+                        this.rect(dx + 12, dy + 10, 3, 2, COLORS.SKIN); // Right hand
+                    }
+                }
 
                 // --- HEAD ---
                 // Face base
@@ -247,8 +293,6 @@
                     this.rect(dx + 4, dy, 8, 2, COLORS.HAIR); // Top hair
                     this.rect(dx + 3, dy + 1, 1, 3, COLORS.HAIR); // Sideburn L
                     this.rect(dx + 12, dy + 1, 1, 3, COLORS.HAIR); // Sideburn R
-                } else {
-                    this.rect(dx + 4, dy, 8, 1, COLORS.HAIR); // Stubble
                 }
 
                 // Eyes
@@ -256,10 +300,9 @@
                 this.rect(dx + 9, dy + 3, 2, 2, COLORS.BLACK);
 
                 // Beard
-                if (!isHairCut) {
-                    this.rect(dx + 4, dy + 5, 8, 2, COLORS.HAIR);
-                    this.rect(dx + 5, dy + 7, 6, 1, COLORS.HAIR);
-                }
+                // Beard (Always present, even after haircut)
+                this.rect(dx + 4, dy + 5, 8, 2, COLORS.HAIR);
+                this.rect(dx + 5, dy + 7, 6, 1, COLORS.HAIR);
             }
 
             drawCloud(x, y) {
@@ -269,16 +312,84 @@
             }
 
             drawTent(x, y) {
-                this.rect(x + 2, y + 8, 28, 20, COLORS.WHITE);
-                this.rect(x + 8, y, 16, 8, COLORS.WHITE);
-                this.rect(x + 4, y + 4, 24, 4, COLORS.WHITE);
-                this.rect(x + 12, y + 18, 8, 10, '#dddddd');
-                this.rect(x + 2, y + 28, 28, 2, COLORS.TENT_SHADOW);
+                const sx = Math.floor(x - this.camera.x);
+                const sy = Math.floor(y - this.camera.y);
+
+                // Ropes (Pegs) - Thinner and more grounded
+                this.ctx.strokeStyle = COLORS.ROPE;
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                // Left Rope
+                this.ctx.moveTo(sx + 4, sy + 15);
+                this.ctx.lineTo(sx - 6, sy + 28);
+                // Right Rope
+                this.ctx.moveTo(sx + 28, sy + 15);
+                this.ctx.lineTo(sx + 38, sy + 28);
+                this.ctx.stroke();
+
+                // Pegs
+                this.ctx.fillStyle = '#553311';
+                this.ctx.fillRect(sx - 7, sy + 27, 2, 2);
+                this.ctx.fillRect(sx + 37, sy + 27, 2, 2);
+
+                // Triangular Tent Body
+                // Main front face (Triangle)
+                this.ctx.fillStyle = COLORS.WHITE;
+                this.ctx.beginPath();
+                this.ctx.moveTo(sx + 16, sy);       // Top peak
+                this.ctx.lineTo(sx + 32, sy + 28);  // Bottom right
+                this.ctx.lineTo(sx, sy + 28);       // Bottom left
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                // Shaded side (giving it 3D depth)
+                this.ctx.fillStyle = COLORS.TENT_SIDE;
+                this.ctx.beginPath();
+                this.ctx.moveTo(sx + 16, sy);       // Top peak
+                this.ctx.lineTo(sx + 16, sy + 28);  // Bottom center
+                this.ctx.lineTo(sx, sy + 28);       // Bottom left
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                // Entrance (Darker triangle/slit)
+                this.ctx.fillStyle = '#dddddd';
+                this.ctx.beginPath();
+                this.ctx.moveTo(sx + 16, sy + 12);
+                this.ctx.lineTo(sx + 20, sy + 28);
+                this.ctx.lineTo(sx + 12, sy + 28);
+                this.ctx.closePath();
+                this.ctx.fill();
             }
 
             drawMountain(x, y, w, h) {
-                this.rect(x, y, w, h, COLORS.MOUNTAIN);
-                this.rect(x + 5, y + 5, w - 10, h - 5, COLORS.MOUNTAIN_DARK);
+                const sx = Math.floor(x - this.camera.x);
+                const sy = Math.floor(y - this.camera.y);
+
+                // Base Layer (Widest)
+                this.ctx.fillStyle = COLORS.MOUNTAIN;
+                this.ctx.fillRect(sx, sy + 40, w, h - 40);
+
+                // Middle Layer (Stepped in)
+                this.ctx.fillStyle = '#707070';
+                this.ctx.fillRect(sx + 10, sy + 20, w - 20, h - 20);
+
+                // Top Layer (Peak area)
+                this.ctx.fillStyle = '#808080';
+                this.ctx.fillRect(sx + 25, sy, w - 50, h - 30);
+
+                // Texture/Rocks
+                this.ctx.fillStyle = '#505050';
+                this.ctx.fillRect(sx + 15, sy + 50, 10, 5);
+                this.ctx.fillRect(sx + w - 25, sy + 30, 8, 4);
+                this.ctx.fillRect(sx + 40, sy + 10, 6, 3);
+
+                // The White Pillar (Jabal al-Rahmah Marker)
+                const px = sx + w / 2 - 4;
+                const py = sy - 15;
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(px, py, 8, 20); // Pillar shaft
+                this.ctx.fillStyle = '#dddddd'; // Shading
+                this.ctx.fillRect(px + 6, py, 2, 20);
             }
 
             drawPillar(x, y, w, h) {
@@ -306,10 +417,105 @@
                 this.rect(x, y + 10, 64, 8, COLORS.KAABA_GOLD);
                 // Door area
                 this.rect(x + 40, y + 30, 12, 20, '#332200');
+
+                // Black Stone (Hajar al-Aswad) - Bottom Left Corner
+                // Silver Casing
+                this.ctx.fillStyle = '#c0c0c0';
+                this.ctx.beginPath();
+                this.ctx.arc(Math.floor(x - this.camera.x), Math.floor(y + 64 - this.camera.y - 5), 6, 0, Math.PI * 2);
+                this.ctx.fill();
+                // Stone
+                this.ctx.fillStyle = '#000';
+                this.ctx.beginPath();
+                this.ctx.arc(Math.floor(x - this.camera.x), Math.floor(y + 64 - this.camera.y - 5), 3, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            drawSheep(x, y) {
+                const sx = Math.floor(x - this.camera.x);
+                const sy = Math.floor(y - this.camera.y);
+
+                // Body
+                this.ctx.fillStyle = COLORS.WHITE;
+                this.ctx.fillRect(sx, sy, 12, 8);
+                // Head
+                this.ctx.fillStyle = '#f0f0f0';
+                this.ctx.fillRect(sx - 2, sy - 2, 6, 6);
+                // Legs
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(sx + 2, sy + 8, 2, 3);
+                this.ctx.fillRect(sx + 8, sy + 8, 2, 3);
+                // Eye
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(sx, sy, 1, 1);
+            }
+
+            drawSign(x, y, text) {
+                const sx = Math.floor(x - this.camera.x);
+                const sy = Math.floor(y - this.camera.y);
+
+                this.ctx.font = '6px monospace';
+                const textWidth = this.ctx.measureText(text).width;
+                const boardW = textWidth + 6;
+                const boardH = 10;
+                const boardX = sx - boardW / 2;
+
+                // Post
+                this.ctx.fillStyle = COLORS.STALL_WOOD;
+                this.ctx.fillRect(sx - 1, sy + 10, 2, 10);
+
+                // Board
+                this.ctx.fillStyle = '#d2b48c'; // Tan
+                this.ctx.fillRect(boardX, sy, boardW, boardH);
+                this.ctx.strokeStyle = COLORS.STALL_WOOD;
+                this.ctx.strokeRect(boardX, sy, boardW, boardH);
+
+                // Arrow/Text
+                this.ctx.fillStyle = '#3e2723';
+                this.ctx.fillText(text, boardX + 3, sy + 7);
+            }
+
+            drawBarber(x, y) {
+                const sx = Math.floor(x - this.camera.x);
+                const sy = Math.floor(y - this.camera.y);
+
+                // Face
+                this.ctx.fillStyle = COLORS.SKIN;
+                this.ctx.fillRect(sx + 4, sy, 8, 7);
+                // Hair
+                this.ctx.fillStyle = COLORS.HAIR;
+                this.ctx.fillRect(sx + 4, sy, 8, 2);
+                this.ctx.fillRect(sx + 3, sy + 1, 1, 3);
+                this.ctx.fillRect(sx + 12, sy + 1, 1, 3);
+
+                // White Coat
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(sx + 3, sy + 6, 10, 9);
+                // Pants
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(sx + 4, sy + 12, 8, 3);
+
+                // Scissors
+                this.ctx.fillStyle = '#c0c0c0';
+                this.ctx.fillRect(sx + 14, sy + 6, 4, 1);
+                this.ctx.fillRect(sx + 14, sy + 6, 1, 4);
             }
         }
 
         // --- GAME ENTITIES ---
+        class Sign {
+            constructor(x, y, text) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.w = 16;
+                this.h = 20;
+            }
+            draw(renderer) {
+                renderer.drawSign(this.x, this.y, this.text);
+            }
+        }
+
         class Player {
             constructor(x, y) {
                 this.x = x;
@@ -481,14 +687,35 @@
                 this.tents = [];
                 this.prayers = 0;
                 this.maxPrayers = 5;
-                for (let i = 0; i < 20; i++) {
-                    this.tents.push({
-                        x: Math.random() * (this.mapW - 40),
-                        y: Math.random() * (this.mapH - 40),
+                this.tents = [];
+                this.prayers = 0;
+                this.maxPrayers = 5;
+
+                // Generate non-overlapping tents
+                let attempts = 0;
+                while (this.tents.length < 20 && attempts < 1000) {
+                    let t = {
+                        x: Math.random() * (this.mapW - 60) + 10, // Padding
+                        y: Math.random() * (this.mapH - 60) + 10,
                         w: 32, h: 32,
                         isTarget: false,
                         visited: false
-                    });
+                    };
+
+                    let overlap = false;
+                    for (let other of this.tents) {
+                        // Check distance or bounding box with padding
+                        if (t.x < other.x + other.w + 10 && t.x + t.w + 10 > other.x &&
+                            t.y < other.y + other.h + 10 && t.y + t.h + 10 > other.y) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+
+                    if (!overlap) {
+                        this.tents.push(t);
+                    }
+                    attempts++;
                 }
                 let targets = 0;
                 while (targets < 5) {
@@ -527,9 +754,28 @@
             }
             draw(renderer) {
                 renderer.clear(COLORS.SAND);
+
+                // Pavement/Paths - Use rect to handle camera offset
+                // Horizontal paths
+                renderer.rect(0, 100, 400, 20, COLORS.PAVEMENT);
+                renderer.rect(0, 300, 400, 20, COLORS.PAVEMENT);
+                // Vertical paths
+                renderer.rect(100, 0, 20, 400, COLORS.PAVEMENT);
+                renderer.rect(300, 0, 20, 400, COLORS.PAVEMENT);
+
+                // Sort tents by Y to draw them in correct depth order
+                this.tents.sort((a, b) => a.y - b.y);
+
                 for (let t of this.tents) {
                     renderer.drawTent(t.x, t.y);
-                    if (t.isTarget && !t.visited) renderer.rect(t.x + 12, t.y + 25, 8, 4, COLORS.RUG_RED);
+                    // Draw rug in front of tent if target
+                    if (t.isTarget && !t.visited) {
+                        // Draw a mini version of the prayer rug
+                        renderer.rect(t.x + 10, t.y + 30, 12, 20, COLORS.RUG_GREEN);
+                        renderer.rect(t.x + 10, t.y + 28, 12, 2, COLORS.RUG_GOLD); // Top fringe
+                        renderer.rect(t.x + 10, t.y + 50, 12, 2, COLORS.RUG_GOLD); // Bottom fringe
+                        renderer.rect(t.x + 14, t.y + 34, 4, 12, '#008000'); // Inner
+                    }
                 }
             }
         }
@@ -545,6 +791,9 @@
                 this.time = 0;
                 this.clouds = [
                     { x: 20, y: 20 }, { x: 150, y: 40 }, { x: 250, y: 10 }
+                ];
+                this.signs = [
+                    new Sign(50, 200, "Mt. Mercy ^") // Pointing up/towards mountain
                 ];
             }
             enter() {
@@ -585,9 +834,20 @@
                     renderer.drawCloud(c.x, c.y);
                 }
 
+                // Signs
+                for (let s of this.signs) {
+                    s.draw(renderer);
+                }
+
                 if (this.game.input.isDown('Space')) {
+                    // Use 'pray' pose instead of manual rect
+                    // We need to pass this state to the main loop or handle it here?
+                    // The main loop calls drawPlayer. We can override it or set a flag on player.
+                    this.game.player.pose = 'pray';
                     renderer.rect(this.game.player.x, this.game.player.y - 10, 16, 4, '#000');
                     renderer.rect(this.game.player.x, this.game.player.y - 10, 16 * (this.reflectionProgress / this.maxReflection), 4, '#0f0');
+                } else {
+                    this.game.player.pose = 'stand';
                 }
                 if (this.time > 0.5) {
                     renderer.ctx.fillStyle = `rgba(255, 100, 0, ${(this.time - 0.5) * 0.5})`;
@@ -604,45 +864,114 @@
                 this.pebbles = [];
                 this.collected = 0;
                 this.target = 7;
+                this.phase = 'sleep'; // 'sleep' or 'collect'
+                this.sleepProgress = 0;
+                this.maxSleep = 100;
+                this.dawnAlpha = 0; // For transition effect
+                this.horizonY = 80; // Sky ends, ground starts
+
+                // Add sky boundary to solids to prevent walking into sky
+                this.solids = [{ x: 0, y: 0, w: this.mapW, h: this.horizonY }];
+            }
+            enter() {
+                this.game.player.x = 20;
+                this.game.player.y = 100; // Start on ground
+                this.game.ui.setMessage("Stage 4: Muzdalifah. Rest under the stars. Hold SPACE to sleep.");
+                this.game.ui.setHUD("Sleep: 0%");
+            }
+            update() {
+                if (this.phase === 'sleep') {
+                    if (this.game.input.isDown('Space')) {
+                        this.sleepProgress += 0.5;
+                        if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
+                        this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
+
+                        if (this.sleepProgress >= this.maxSleep) {
+                            this.phase = 'transition';
+                            this.game.player.pose = 'stand';
+                            this.game.ui.setMessage("Fajr approaches...");
+                        }
+                    }
+                } else if (this.phase === 'transition') {
+                    this.dawnAlpha += 0.01;
+                    if (this.dawnAlpha >= 1) {
+                        this.phase = 'collect';
+                        this.spawnPebbles();
+                        this.game.ui.setMessage("Fajr has arrived. Collect 7 pebbles (SPACE).");
+                        this.game.ui.setHUD(`Pebbles: 0/${this.target}`);
+                    }
+                } else if (this.phase === 'collect') {
+                    if (this.game.input.isJustPressed('Space') && this.collected < this.target) {
+                        const p = this.game.player;
+                        for (let peb of this.pebbles) {
+                            if (peb.active &&
+                                p.x < peb.x + peb.w + 10 && p.x + p.w > peb.x - 10 &&
+                                p.y < peb.y + peb.h + 10 && p.y + p.h > peb.y - 10) {
+                                peb.active = false;
+                                this.collected++;
+                                this.game.ui.setHUD(`Pebbles: ${this.collected}/${this.target}`);
+                                if (this.collected >= this.target) {
+                                    this.game.ui.setMessage("Pebbles collected. To Jamarat!");
+                                    setTimeout(() => { this.game.changeStage(new StageJamarat(this.game)); }, 2000);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            spawnPebbles() {
                 for (let i = 0; i < 15; i++) {
                     this.pebbles.push({
                         x: Math.random() * (this.mapW - 10),
-                        y: Math.random() * (this.mapH - 10),
+                        y: Math.random() * (this.mapH - this.horizonY - 10) + this.horizonY, // Only on ground
                         w: 4, h: 4,
                         active: true
                     });
                 }
             }
-            enter() {
-                this.game.player.x = 10;
-                this.game.player.y = 10;
-                this.game.ui.setMessage("Stage 4: Muzdalifah. Collect 7 pebbles (SPACE).");
-                this.game.ui.setHUD(`Pebbles: 0/${this.target}`);
-            }
-            update() {
-                if (this.game.input.isJustPressed('Space')) {
-                    const p = this.game.player;
-                    for (let peb of this.pebbles) {
-                        if (peb.active &&
-                            p.x < peb.x + peb.w + 10 && p.x + p.w > peb.x - 10 &&
-                            p.y < peb.y + peb.h + 10 && p.y + p.h > peb.y - 10) {
-                            peb.active = false;
-                            this.collected++;
-                            this.game.ui.setHUD(`Pebbles: ${this.collected}/${this.target}`);
-                            if (this.collected >= this.target) {
-                                this.game.ui.setMessage("Pebbles collected. To Jamarat!");
-                                setTimeout(() => { this.game.changeStage(new StageJamarat(this.game)); }, 2000);
-                            }
-                            break;
-                        }
+
+            draw(renderer) {
+                // 1. Sky (Top part)
+                if (this.phase === 'collect') {
+                    renderer.rect(0, 0, this.mapW, this.horizonY, '#202050'); // Dawn Sky
+                } else {
+                    renderer.rect(0, 0, this.mapW, this.horizonY, COLORS.SKY_NIGHT); // Night Sky
+                }
+
+                // Stars (Only in Sky)
+                for (let i = 0; i < 20; i++) {
+                    renderer.rect(i * 15, (i * 23) % this.horizonY, 1, 1, '#fff');
+                }
+
+                // 2. Ground (Bottom part)
+                renderer.rect(0, this.horizonY, this.mapW, this.mapH - this.horizonY, '#2b2b2b'); // Dark Earth
+
+                // Sleep Phase Visuals
+                if (this.phase === 'sleep') {
+                    if (this.game.input.isDown('Space')) {
+                        this.game.player.pose = 'sleep';
+                        renderer.rect(this.game.player.x, this.game.player.y + 16, 16, 4, '#444'); // Mat
+                        // Zzz
+                        renderer.ctx.fillStyle = '#fff';
+                        renderer.ctx.fillText("Zzz", this.game.player.x + 20, this.game.player.y);
+                    } else {
+                        this.game.player.pose = 'stand';
                     }
                 }
-            }
-            draw(renderer) {
-                renderer.clear(COLORS.SKY_NIGHT);
-                for (let i = 0; i < 20; i++) renderer.rect(i * 15, (i * 23) % 200, 1, 1, '#fff');
-                for (let peb of this.pebbles) {
-                    if (peb.active) renderer.rect(peb.x, peb.y, peb.w, peb.h, COLORS.PEBBLE);
+
+                // Pebbles
+                if (this.phase === 'collect') {
+                    for (let peb of this.pebbles) {
+                        if (peb.active) renderer.rect(peb.x, peb.y, peb.w, peb.h, COLORS.PEBBLE);
+                    }
+                }
+
+                // Transition Overlay
+                if (this.phase === 'transition') {
+                    renderer.ctx.fillStyle = `rgba(32, 32, 80, ${this.dawnAlpha})`; // Fade to dawn color
+                    renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
                 }
             }
         }
@@ -657,10 +986,39 @@
                     { x: 150, y: 120, w: 30, h: 50, size: 'medium' },
                     { x: 200, y: 200, w: 40, h: 60, size: 'large', isTarget: true }
                 ];
-                this.solids = this.pillars;
+
+                // Create solid barriers for the rings
+                this.solids = [];
+                for (let p of this.pillars) {
+                    // Ring dimensions based on drawing logic
+                    // Ellipse center: (p.x + p.w/2, p.y + p.h)
+                    // Radius X: p.w + 10
+                    // Radius Y: 15
+                    // Bounding Box:
+                    let rx = p.w + 10;
+                    let ry = 15;
+                    let cx = p.x + p.w / 2;
+                    let cy = p.y + p.h;
+
+                    // Add a rectangular solid for the ring
+                    this.solids.push({
+                        x: cx - rx,
+                        y: cy - ry,
+                        w: rx * 2,
+                        h: ry * 2
+                    });
+                }
+                // Also add pillars themselves (redundant but safe)
+                this.solids = this.solids.concat(this.pillars);
+
                 this.stonesThrown = 0;
                 this.target = 7;
                 this.projectiles = [];
+
+                // Sign pointing to the largest pillar
+                this.signs = [
+                    new Sign(150, 250, "Largest ->")
+                ];
             }
             enter() {
                 this.game.player.x = 10;
@@ -669,7 +1027,7 @@
                 this.game.ui.setHUD(`Thrown: 0/${this.target}`);
             }
             update() {
-                if (this.game.input.isJustPressed('Space')) {
+                if (this.game.input.isJustPressed('Space') && this.stonesThrown < this.target) {
                     this.projectiles.push({
                         x: this.game.player.x + 8,
                         y: this.game.player.y + 8,
@@ -697,10 +1055,32 @@
             draw(renderer) {
                 renderer.clear(COLORS.SAND);
                 for (let p of this.pillars) {
+                    // Draw Ring/Basin
+                    const sx = Math.floor(p.x - renderer.camera.x);
+                    const sy = Math.floor(p.y - renderer.camera.y);
+
+                    renderer.ctx.fillStyle = '#c0c0c0'; // Concrete floor
+                    renderer.ctx.strokeStyle = '#808080'; // Wall outline
+                    renderer.ctx.lineWidth = 3;
+
+                    renderer.ctx.beginPath();
+                    // Ellipse for the basin
+                    // Center x = sx + p.w/2
+                    // Center y = sy + p.h (base of pillar)
+                    renderer.ctx.ellipse(sx + p.w / 2, sy + p.h, p.w + 10, 15, 0, 0, Math.PI * 2);
+                    renderer.ctx.fill();
+                    renderer.ctx.stroke();
+
+                    // Draw Pillar
                     renderer.drawPillar(p.x, p.y, p.w, p.h);
                 }
                 for (let p of this.projectiles) {
                     renderer.rect(p.x, p.y, 3, 3, COLORS.PEBBLE);
+                }
+
+                // Draw Signs
+                for (let s of this.signs) {
+                    s.draw(renderer);
                 }
             }
         }
@@ -708,41 +1088,165 @@
         class StageSacrifice extends Stage {
             constructor(game) {
                 super(game);
-                this.stalls = [
-                    { x: 50, y: 50, type: 'animal', done: false },
-                    { x: 150, y: 50, type: 'scissors', done: false }
+                this.mapW = 400;
+                this.mapH = 300;
+
+                // Animal Pen
+                this.pen = { x: 20, y: 50, w: 100, h: 80 };
+                this.animals = [
+                    { x: 40, y: 70, w: 12, h: 8, id: 1, following: false },
+                    { x: 80, y: 90, w: 12, h: 8, id: 2, following: false },
+                    { x: 60, y: 60, w: 12, h: 8, id: 3, following: false }
+                ];
+
+                // Sacrifice Zone
+                this.sacrificeZone = { x: 250, y: 150, w: 60, h: 60 };
+
+                // Barber Stall
+                this.barber = { x: 300, y: 50, w: 40, h: 30, type: 'scissors' };
+                this.barberNPC = { x: 315, y: 65 };
+
+                this.currentAnimal = null;
+                this.sacrificeDone = false;
+                this.hairCutDone = false;
+
+                // Signs
+                this.signs = [
+                    new Sign(140, 180, "Animals <"), // Pointing left to Pen
+                    new Sign(200, 140, "Barber >")  // Pointing right to Sacrifice/Barber
+                ];
+
+                // Solids for pen walls (with door gap at bottom)
+                this.solids = [
+                    { x: this.pen.x, y: this.pen.y, w: this.pen.w, h: 2 }, // Top
+                    { x: this.pen.x, y: this.pen.y, w: 2, h: this.pen.h }, // Left
+                    { x: this.pen.x + this.pen.w, y: this.pen.y, w: 2, h: this.pen.h }, // Right
+                    // Bottom Split
+                    { x: this.pen.x, y: this.pen.y + this.pen.h, w: 40, h: 2 }, // Bottom Left
+                    { x: this.pen.x + 60, y: this.pen.y + this.pen.h, w: 40, h: 2 } // Bottom Right (Gap 40-60 relative to x)
                 ];
             }
+
             enter() {
-                this.game.player.x = 100;
-                this.game.player.y = 100;
-                this.game.ui.setMessage("Stage 6: Sacrifice & Halq. Visit the Animal stall then the Barber.");
-                this.game.ui.setHUD("");
+                this.game.player.x = 150;
+                this.game.player.y = 200;
+                this.game.ui.setMessage("Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone.");
+                this.game.ui.setHUD("Sacrifice: Pending");
             }
+
             update() {
-                if (this.game.input.isJustPressed('Space')) {
-                    const p = this.game.player;
-                    for (let s of this.stalls) {
-                        if (!s.done &&
-                            p.x < s.x + 40 + 10 && p.x + p.w > s.x - 10 &&
-                            p.y < s.y + 30 + 10 && p.y + p.h > s.y - 10) {
-                            s.done = true;
-                            if (s.type === 'animal') {
-                                this.game.ui.setMessage("Sacrifice performed.");
-                            } else if (s.type === 'scissors') {
-                                this.game.player.isHairCut = true;
-                                this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
-                                setTimeout(() => { this.game.changeStage(new StageGrandMosque(this.game)); }, 2000);
+                const p = this.game.player;
+
+                // 1. Animal Interaction
+                if (!this.sacrificeDone && !this.currentAnimal) {
+                    // Check if player is near pen entrance (let's say right side is open or just proximity)
+                    // Actually let's make the pen have an opening or just proximity interaction
+                    for (let a of this.animals) {
+                        if (p.x < a.x + a.w + 20 && p.x + p.w > a.x - 20 &&
+                            p.y < a.y + a.h + 20 && p.y + p.h > a.y - 20) {
+                            if (this.game.input.isJustPressed('Space')) {
+                                a.following = true;
+                                this.currentAnimal = a;
+                                this.game.ui.setMessage("Animal is following. Lead it to the Sacrifice Zone.");
+                                break;
                             }
                         }
                     }
                 }
+
+                // 2. Animal Following Logic
+                if (this.currentAnimal) {
+                    const a = this.currentAnimal;
+                    const dx = p.x - a.x;
+                    const dy = p.y - a.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > 20) {
+                        a.x += (dx / dist) * 1.0;
+                        a.y += (dy / dist) * 1.0;
+                    }
+
+                    // Check if in sacrifice zone
+                    const sz = this.sacrificeZone;
+                    if (a.x > sz.x && a.x < sz.x + sz.w &&
+                        a.y > sz.y && a.y < sz.y + sz.h) {
+
+                        this.game.ui.setMessage("Press SPACE to perform sacrifice.");
+
+                        if (this.game.input.isJustPressed('Space')) {
+                            // Perform Sacrifice
+                            this.currentAnimal = null;
+                            // Remove animal from list
+                            this.animals = this.animals.filter(an => an !== a);
+                            this.sacrificeDone = true;
+                            this.game.ui.setHUD("Sacrifice: Done");
+                            this.game.ui.setMessage("Sacrifice accepted. Now visit the Barber for Halq.");
+                        }
+                    }
+                }
+
+                // 3. Barber Interaction
+                if (this.sacrificeDone && !this.hairCutDone) {
+                    const b = this.barber;
+                    if (p.x < b.x + b.w + 10 && p.x + p.w > b.x - 10 &&
+                        p.y < b.y + b.h + 10 && p.y + p.h > b.y - 10) {
+                        if (this.game.input.isJustPressed('Space')) {
+                            this.hairCutDone = true;
+                            this.game.player.isHairCut = true;
+                            this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
+                            setTimeout(() => { this.game.changeStage(new StageGrandMosque(this.game)); }, 2000);
+                        }
+                    }
+                }
             }
+
             draw(renderer) {
                 renderer.clear(COLORS.SAND);
-                for (let s of this.stalls) {
-                    renderer.drawStall(s.x, s.y, s.type);
-                    if (s.done) renderer.rect(s.x + 15, s.y + 35, 10, 4, '#0f0');
+
+                // Draw Pen
+                renderer.ctx.strokeStyle = COLORS.STALL_WOOD;
+                renderer.ctx.lineWidth = 2;
+                const pen = this.pen;
+                const sx = Math.floor(pen.x - renderer.camera.x);
+                const sy = Math.floor(pen.y - renderer.camera.y);
+
+                // Draw walls manually to match solids
+                renderer.ctx.beginPath();
+                // Top
+                renderer.ctx.moveTo(sx, sy); renderer.ctx.lineTo(sx + pen.w, sy);
+                // Sides
+                renderer.ctx.moveTo(sx, sy); renderer.ctx.lineTo(sx, sy + pen.h);
+                renderer.ctx.moveTo(sx + pen.w, sy); renderer.ctx.lineTo(sx + pen.w, sy + pen.h);
+                // Bottom with gap
+                renderer.ctx.moveTo(sx, sy + pen.h); renderer.ctx.lineTo(sx + 40, sy + pen.h);
+                renderer.ctx.moveTo(sx + 60, sy + pen.h); renderer.ctx.lineTo(sx + pen.w, sy + pen.h);
+                renderer.ctx.stroke();
+
+                // Draw Sacrifice Zone
+                const sz = this.sacrificeZone;
+                const szx = Math.floor(sz.x - renderer.camera.x);
+                const szy = Math.floor(sz.y - renderer.camera.y);
+                renderer.ctx.fillStyle = 'rgba(200, 0, 0, 0.2)';
+                renderer.ctx.fillRect(szx, szy, sz.w, sz.h);
+                renderer.ctx.strokeStyle = 'rgba(200, 0, 0, 0.5)';
+                renderer.ctx.strokeRect(szx, szy, sz.w, sz.h);
+
+                // Draw Animals
+                for (let a of this.animals) {
+                    renderer.drawSheep(a.x, a.y);
+                }
+
+                // Draw Barber Stall & NPC
+                renderer.drawStall(this.barber.x, this.barber.y, 'scissors');
+                renderer.drawBarber(this.barberNPC.x, this.barberNPC.y);
+
+                if (this.hairCutDone) {
+                    renderer.rect(this.barber.x + 15, this.barber.y + 35, 10, 4, '#0f0');
+                }
+
+                // Draw Signs
+                for (let s of this.signs) {
+                    s.draw(renderer);
                 }
             }
         }
@@ -755,12 +1259,13 @@
                 this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
                 this.solids = [this.kaaba];
 
-                // Tawaf Checkpoints (Corners)
+                // Tawaf Checkpoints (Anti-Clockwise starting from Black Stone/Bottom-Left)
+                // Target sequence: Bottom Right -> Top Right -> Top Left -> Bottom Left (Lap Complete)
                 this.checkpoints = [
-                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 0 }, // Top Left
+                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
                     { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
-                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 2 }, // Bottom Right
-                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left
+                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 2 }, // Top Left
+                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left (Black Stone)
                 ];
                 this.currentCheckpoint = 0;
                 this.laps = 0;
@@ -773,12 +1278,13 @@
                 this.saiTrips = 0;
                 this.maxSai = 7;
                 this.targetHill = this.safa;
+                this.saiStarted = false;
             }
 
             enter() {
-                this.game.player.x = 100;
-                this.game.player.y = 100;
-                this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps around Kaaba).");
+                this.game.player.x = 140; // Start near Black Stone (Bottom Left)
+                this.game.player.y = 240;
+                this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps Anti-Clockwise).");
                 this.game.ui.setHUD(`Tawaf: 0/${this.maxLaps}`);
             }
 
@@ -808,15 +1314,25 @@
                     if (p.x < t.x + t.w && p.x + p.w > t.x &&
                         p.y < t.y + t.h && p.y + p.h > t.y) {
 
-                        this.saiTrips++;
-                        this.game.ui.setHUD(`Sa'i: ${this.saiTrips}/${this.maxSai}`);
-
-                        if (this.saiTrips >= this.maxSai) {
-                            this.game.ui.setMessage("Sa'i complete. One final Farewell Tawaf.");
-                            setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                        if (!this.saiStarted) {
+                            // First visit to Safa (Start point)
+                            if (t === this.safa) {
+                                this.saiStarted = true;
+                                this.targetHill = this.marwa;
+                                this.game.ui.setMessage("Sa'i started. Walk to Marwa.");
+                            }
                         } else {
-                            this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
-                            this.game.ui.setMessage(`Go to ${this.targetHill.name}.`);
+                            // Subsequent visits
+                            this.saiTrips++;
+                            this.game.ui.setHUD(`Sa'i: ${this.saiTrips}/${this.maxSai}`);
+
+                            if (this.saiTrips >= this.maxSai) {
+                                this.game.ui.setMessage("Sa'i complete. One final Farewell Tawaf.");
+                                setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                            } else {
+                                this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
+                                this.game.ui.setMessage(`Go to ${this.targetHill.name}.`);
+                            }
                         }
                     }
                 }
@@ -845,17 +1361,17 @@
                 this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
                 this.solids = [this.kaaba];
                 this.checkpoints = [
-                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 0 },
-                    { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 },
-                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 2 },
-                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }
+                    { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
+                    { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
+                    { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 2 }, // Top Left
+                    { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left
                 ];
                 this.currentCheckpoint = 0;
                 this.laps = 0;
             }
             enter() {
-                this.game.player.x = 100;
-                this.game.player.y = 100;
+                this.game.player.x = 140;
+                this.game.player.y = 240;
                 this.game.ui.setMessage("Stage 8: Farewell Tawaf. One last lap.");
                 this.game.ui.setHUD("Farewell: 0/1");
             }
@@ -935,7 +1451,7 @@
                 this.input.update();
 
                 this.currentStage.draw(this.renderer);
-                this.renderer.drawPlayer(this.player.x, this.player.y, this.player.isIhram, this.player.isHairCut);
+                this.renderer.drawPlayer(this.player.x, this.player.y, this.player.isIhram, this.player.isHairCut, this.player.pose);
 
                 requestAnimationFrame(this.loop);
             }
