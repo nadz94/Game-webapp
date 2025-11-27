@@ -872,6 +872,9 @@
 
                 // Add sky boundary to solids to prevent walking into sky
                 this.solids = [{ x: 0, y: 0, w: this.mapW, h: this.horizonY }];
+
+                // Animation timer for Z's
+                this.zzzTime = 0;
             }
             enter() {
                 this.game.player.x = 20;
@@ -885,6 +888,9 @@
                         this.sleepProgress += 0.5;
                         if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
                         this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
+
+                        // Increment Z animation timer
+                        this.zzzTime += 1;
 
                         if (this.sleepProgress >= this.maxSleep) {
                             this.phase = 'transition';
@@ -953,9 +959,24 @@
                     if (this.game.input.isDown('Space')) {
                         this.game.player.pose = 'sleep';
                         renderer.rect(this.game.player.x, this.game.player.y + 16, 16, 4, '#444'); // Mat
-                        // Zzz
+
+                        // Animated Zzz - appear one by one and drift up
                         renderer.ctx.fillStyle = '#fff';
-                        renderer.ctx.fillText("Zzz", this.game.player.x + 20, this.game.player.y);
+                        renderer.ctx.font = '8px "Press Start 2P"';
+
+                        const cycle = Math.floor(this.zzzTime / 20) % 3; // Cycle every 60 frames
+                        const drift = (this.zzzTime % 20) * 0.3; // Drift up over 20 frames
+
+                        // Position ZZZ above the sleeping character's head
+                        if (cycle >= 0) {
+                            renderer.ctx.fillText('Z', this.game.player.x + 4, this.game.player.y - 1 - drift);
+                        }
+                        if (cycle >= 1) {
+                            renderer.ctx.fillText('z', this.game.player.x + 10, this.game.player.y - 3 - drift);
+                        }
+                        if (cycle >= 2) {
+                            renderer.ctx.fillText('z', this.game.player.x + 15, this.game.player.y - 5 - drift);
+                        }
                     } else {
                         this.game.player.pose = 'stand';
                     }
@@ -1017,7 +1038,7 @@
 
                 // Sign pointing to the largest pillar
                 this.signs = [
-                    new Sign(150, 250, "Largest ->")
+                    new Sign(50, 250, "Largest ->")
                 ];
             }
             enter() {
@@ -1091,29 +1112,31 @@
                 this.mapW = 400;
                 this.mapH = 300;
 
-                // Animal Pen
-                this.pen = { x: 20, y: 50, w: 100, h: 80 };
+                // Animal Pen (left side)
+                this.pen = { x: 20, y: 100, w: 100, h: 80 };
                 this.animals = [
-                    { x: 40, y: 70, w: 12, h: 8, id: 1, following: false },
-                    { x: 80, y: 90, w: 12, h: 8, id: 2, following: false },
-                    { x: 60, y: 60, w: 12, h: 8, id: 3, following: false }
+                    { x: 40, y: 120, w: 12, h: 8, id: 1, following: false },
+                    { x: 80, y: 140, w: 12, h: 8, id: 2, following: false },
+                    { x: 60, y: 110, w: 12, h: 8, id: 3, following: false }
                 ];
 
-                // Sacrifice Zone
-                this.sacrificeZone = { x: 250, y: 150, w: 60, h: 60 };
+                // Sacrifice Zone (right side, same y-axis)
+                this.sacrificeZone = { x: 280, y: 100, w: 60, h: 60 };
 
-                // Barber Stall
-                this.barber = { x: 300, y: 50, w: 40, h: 30, type: 'scissors' };
-                this.barberNPC = { x: 315, y: 65 };
+                // Barber Stall (centered between pen and sacrifice zone, same y-axis)
+                const barberX = (this.pen.x + this.pen.w + this.sacrificeZone.x) / 2 - 20; // Center and adjust for width
+                this.barber = { x: barberX, y: 100, w: 40, h: 30, type: 'scissors' };
+                this.barberNPC = { x: barberX + 15, y: 115 };
 
                 this.currentAnimal = null;
                 this.sacrificeDone = false;
                 this.hairCutDone = false;
 
-                // Signs
+                // Signs (centered, pointing outward to each zone)
                 this.signs = [
-                    new Sign(140, 180, "Animals <"), // Pointing left to Pen
-                    new Sign(200, 140, "Barber >")  // Pointing right to Sacrifice/Barber
+                    new Sign(150, 200, "Animals <"), // Left - pointing to animal pen
+                    new Sign(200, 200, "Barber ^"),  // Middle - pointing up to barber
+                    new Sign(250, 200, "Slaughter >") // Right - pointing to sacrifice zone
                 ];
 
                 // Solids for pen walls (with door gap at bottom)
@@ -1121,15 +1144,15 @@
                     { x: this.pen.x, y: this.pen.y, w: this.pen.w, h: 2 }, // Top
                     { x: this.pen.x, y: this.pen.y, w: 2, h: this.pen.h }, // Left
                     { x: this.pen.x + this.pen.w, y: this.pen.y, w: 2, h: this.pen.h }, // Right
-                    // Bottom Split
-                    { x: this.pen.x, y: this.pen.y + this.pen.h, w: 40, h: 2 }, // Bottom Left
-                    { x: this.pen.x + 60, y: this.pen.y + this.pen.h, w: 40, h: 2 } // Bottom Right (Gap 40-60 relative to x)
+                    // Bottom Split (Gap from 30-70 = 40 pixel wide entrance)
+                    { x: this.pen.x, y: this.pen.y + this.pen.h, w: 30, h: 2 }, // Bottom Left
+                    { x: this.pen.x + 70, y: this.pen.y + this.pen.h, w: 30, h: 2 } // Bottom Right
                 ];
             }
 
             enter() {
-                this.game.player.x = 150;
-                this.game.player.y = 200;
+                this.game.player.x = 200; // Center below signboards
+                this.game.player.y = 230; // Below the signboards
                 this.game.ui.setMessage("Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone.");
                 this.game.ui.setHUD("Sacrifice: Pending");
             }
@@ -1279,6 +1302,12 @@
                 this.maxSai = 7;
                 this.targetHill = this.safa;
                 this.saiStarted = false;
+
+                // Signs for Sa'i
+                this.saiSigns = [
+                    new Sign(this.safa.x + 15, this.safa.y - 10, "Safa"),
+                    new Sign(this.marwa.x + 15, this.marwa.y - 10, "Marwa")
+                ];
             }
 
             enter() {
@@ -1343,12 +1372,22 @@
                 renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
 
                 if (this.mode === 'sai') {
-                    renderer.rect(this.safa.x, this.safa.y, this.safa.w, this.safa.h, '#888'); // Hill
-                    renderer.rect(this.marwa.x, this.marwa.y, this.marwa.w, this.marwa.h, '#888'); // Hill
+                    // Draw path/track between Safa and Marwa
+                    renderer.rect(this.safa.x + this.safa.w, this.safa.y + 10,
+                        this.marwa.x - (this.safa.x + this.safa.w), 10, '#d0d0d0');
+
+                    // Draw hills
+                    renderer.rect(this.safa.x, this.safa.y, this.safa.w, this.safa.h, '#888'); // Safa
+                    renderer.rect(this.marwa.x, this.marwa.y, this.marwa.w, this.marwa.h, '#888'); // Marwa
 
                     // Highlight target
                     let t = this.targetHill;
                     renderer.rect(t.x, t.y - 10, t.w, 5, '#0f0');
+
+                    // Draw signs
+                    for (let s of this.saiSigns) {
+                        s.draw(renderer);
+                    }
                 }
             }
         }
@@ -1368,12 +1407,15 @@
                 ];
                 this.currentCheckpoint = 0;
                 this.laps = 0;
+                this.maxLaps = 7;
+                this.confetti = [];
+                this.completionTime = 0;
             }
             enter() {
                 this.game.player.x = 140;
                 this.game.player.y = 240;
-                this.game.ui.setMessage("Stage 8: Farewell Tawaf. One last lap.");
-                this.game.ui.setHUD("Farewell: 0/1");
+                this.game.ui.setMessage("Stage 8: Farewell Tawaf. Perform 7 laps.");
+                this.game.ui.setHUD(`Farewell: 0/${this.maxLaps}`);
             }
             update() {
                 const p = this.game.player;
@@ -1384,21 +1426,60 @@
                     if (this.currentCheckpoint > 3) {
                         this.currentCheckpoint = 0;
                         this.laps++;
-                        this.game.ui.setHUD("Farewell: 1/1");
-                        this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");
-                        // End state
+                        this.game.ui.setHUD(`Farewell: ${this.laps}/${this.maxLaps}`);
+                        if (this.laps >= this.maxLaps) {
+                            this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");
+                            // Initialize confetti
+                            if (this.confetti.length === 0) {
+                                for (let i = 0; i < 50; i++) {
+                                    this.confetti.push({
+                                        x: Math.random() * this.mapW,
+                                        y: -10,
+                                        vx: (Math.random() - 0.5) * 2,
+                                        vy: Math.random() * 2 + 1,
+                                        color: ['#ffd700', '#ff69b4', '#87ceeb', '#98fb98', '#ffb6c1'][Math.floor(Math.random() * 5)]
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Update confetti
+                if (this.laps >= this.maxLaps) {
+                    this.completionTime++;
+                    for (let c of this.confetti) {
+                        c.x += c.vx;
+                        c.y += c.vy;
+                        c.vy += 0.1; // Gravity
+
+                        // Reset if off screen
+                        if (c.y > this.mapH) {
+                            c.y = -10;
+                            c.x = Math.random() * this.mapW;
+                        }
                     }
                 }
             }
             draw(renderer) {
                 renderer.clear(COLORS.MARBLE);
                 renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
-                if (this.laps >= 1) {
-                    renderer.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                if (this.laps >= this.maxLaps) {
+                    // Draw confetti
+                    for (let c of this.confetti) {
+                        renderer.rect(c.x, c.y, 3, 3, c.color);
+                    }
+
+                    // Semi-transparent overlay (but don't make it too dark)
+                    renderer.ctx.fillStyle = 'rgba(0,0,0,0.5)';
                     renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-                    renderer.ctx.fillStyle = '#fff';
+
+                    // Draw centered text at top
+                    renderer.ctx.fillStyle = '#ffd700';
                     renderer.ctx.font = '10px "Press Start 2P"';
-                    renderer.ctx.fillText("HAJJ MUBARAK", LOGICAL_W / 2 - 40, LOGICAL_H / 2);
+                    const text = "HAJJ MUBARAK";
+                    const textWidth = renderer.ctx.measureText(text).width;
+                    renderer.ctx.fillText(text, (LOGICAL_W - textWidth) / 2, 30);
                 }
             }
         }
