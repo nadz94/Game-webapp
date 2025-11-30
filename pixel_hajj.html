@@ -25,6 +25,7 @@
             position: relative;
             border: 4px solid #555;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 640px;
         }
 
         canvas {
@@ -33,12 +34,9 @@
         }
 
         #ui-layer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
             width: 100%;
             height: 80px;
-            background: rgba(0, 0, 0, 0.85);
+            background: #000;
             border-top: 2px solid #fff;
             padding: 10px;
             box-sizing: border-box;
@@ -571,11 +569,55 @@
                 this.solids = [];
                 this.mapW = LOGICAL_W;
                 this.mapH = LOGICAL_H;
+                this.showPlayer = true;
             }
             enter() { }
             update() { }
             draw(renderer) { }
             exit() { }
+        }
+
+        class StageIntro extends Stage {
+            constructor(game) {
+                super(game);
+                this.showPlayer = false;
+            }
+            enter() {
+                this.game.ui.setMessage("Welcome. Press SPACE to begin your journey.");
+                this.game.ui.setHUD("");
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    this.game.changeStage(new StageMeeqat(this.game));
+                }
+            }
+            draw(renderer) {
+                renderer.clear('#000');
+                renderer.ctx.fillStyle = '#fff';
+                renderer.ctx.textAlign = 'center';
+
+                // Title
+                renderer.ctx.font = '6px "Press Start 2P"';
+                renderer.ctx.fillText("THE PIXEL HAJJ JOURNEY", LOGICAL_W / 2, 40);
+
+                // Subtitle
+                renderer.ctx.font = '4px "Press Start 2P"';
+                renderer.ctx.fillStyle = '#ffd700';
+                renderer.ctx.fillText("Hajj al-Tamattu'", LOGICAL_W / 2, 55);
+
+                // Context Text
+                renderer.ctx.font = '3.5px "Press Start 2P"';
+                renderer.ctx.fillStyle = '#aaa';
+                renderer.ctx.fillText("You have already completed your Umrah.", LOGICAL_W / 2, 70);
+                renderer.ctx.fillText("Now, you are about to begin your Hajj.", LOGICAL_W / 2, 80);
+
+                // Prompt
+                renderer.ctx.fillStyle = '#fff';
+                renderer.ctx.font = '3.5px "Press Start 2P"';
+                renderer.ctx.fillText("[PRESS SPACE TO START]", LOGICAL_W / 2, 100);
+
+                renderer.ctx.textAlign = 'left'; // Reset
+            }
         }
 
         class StageMeeqat extends Stage {
@@ -596,8 +638,11 @@
                     if (p.x < r.x + r.w + 10 && p.x + p.w > r.x - 10 &&
                         p.y < r.y + r.h + 10 && p.y + p.h > r.y - 10) {
                         this.game.player.isIhram = true;
-                        this.game.ui.setMessage("Ihram donned. Intention made. Go forth!");
-                        setTimeout(() => { this.game.changeStage(new StageMina(this.game)); }, 2000);
+                        this.game.ui.setMessage("Labbayka Hajjan! (Here I am for Hajj)");
+                        setTimeout(() => {
+                            this.game.ui.setMessage("Ihram donned. Intention made. Go forth!");
+                        }, 1500);
+                        setTimeout(() => { this.game.changeStage(new StageMina(this.game)); }, 3500);
                     }
                 }
             }
@@ -687,9 +732,8 @@
                 this.tents = [];
                 this.prayers = 0;
                 this.maxPrayers = 5;
-                this.tents = [];
-                this.prayers = 0;
-                this.maxPrayers = 5;
+                this.prayerProgress = 0;
+                this.maxPrayerProgress = 100;
 
                 // Generate non-overlapping tents
                 let attempts = 0;
@@ -727,29 +771,57 @@
             enter() {
                 this.game.player.x = 10;
                 this.game.player.y = 10;
-                this.game.ui.setMessage("Stage 2: Mina. Find 5 tents with rugs and Pray (SPACE).");
+                this.game.ui.setMessage("Stage 2: Mina (8th Dhul Hijjah). Find 5 tents with rugs and HOLD SPACE to Pray.");
                 this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
             }
             update() {
-                if (this.game.input.isJustPressed('Space')) {
-                    const p = this.game.player;
-                    let found = false;
-                    for (let t of this.tents) {
-                        if (t.isTarget && !t.visited &&
-                            p.x < t.x + t.w && p.x + p.w > t.x &&
-                            p.y < t.y + t.h && p.y + p.h > t.y) {
-                            t.visited = true;
-                            this.prayers++;
-                            this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
-                            this.game.ui.setMessage("You perform the prayer.");
-                            found = true;
-                            if (this.prayers >= this.maxPrayers) {
-                                this.game.ui.setMessage("All prayers done. Proceeding to Arafah...");
-                                setTimeout(() => { this.game.changeStage(new StageArafah(this.game)); }, 2000);
+                const p = this.game.player;
+                let onRug = false;
+
+                for (let t of this.tents) {
+                    if (t.isTarget && !t.visited &&
+                        p.x < t.x + t.w && p.x + p.w > t.x &&
+                        p.y < t.y + t.h && p.y + p.h > t.y) {
+
+                        onRug = true;
+
+                        if (this.game.input.isDown('Space')) {
+                            this.game.player.pose = 'pray';
+                            this.prayerProgress += 1.0; // Adjust speed as needed
+
+                            // Visual feedback in HUD
+                            this.game.ui.setHUD(`Praying: ${Math.floor(this.prayerProgress)}%`);
+
+                            if (this.prayerProgress >= this.maxPrayerProgress) {
+                                t.visited = true;
+                                this.prayers++;
+                                this.prayerProgress = 0;
+                                this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
+                                this.game.ui.setMessage("Prayer completed.");
+
+                                if (this.prayers >= this.maxPrayers) {
+                                    this.game.ui.setMessage("All prayers done. Proceeding to Arafah...");
+                                    setTimeout(() => { this.game.changeStage(new StageArafah(this.game)); }, 2000);
+                                }
                             }
-                            break;
+                        } else {
+                            // Reset progress if key released? Or keep it? 
+                            // Let's reset for "Hold to pray" feel, or maybe decay?
+                            // Resetting is simpler and encourages commitment.
+                            this.prayerProgress = 0;
+                            this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
                         }
+                        break; // Only interact with one at a time
                     }
+                }
+
+                if (!onRug) {
+                    this.prayerProgress = 0;
+                    if (this.game.player.pose === 'pray') {
+                        this.game.player.pose = 'stand';
+                    }
+                } else if (!this.game.input.isDown('Space')) {
+                    this.game.player.pose = 'stand';
                 }
             }
             draw(renderer) {
@@ -769,13 +841,27 @@
                 for (let t of this.tents) {
                     renderer.drawTent(t.x, t.y);
                     // Draw rug in front of tent if target
-                    if (t.isTarget && !t.visited) {
+                    if (t.isTarget) {
                         // Draw a mini version of the prayer rug
-                        renderer.rect(t.x + 10, t.y + 30, 12, 20, COLORS.RUG_GREEN);
-                        renderer.rect(t.x + 10, t.y + 28, 12, 2, COLORS.RUG_GOLD); // Top fringe
-                        renderer.rect(t.x + 10, t.y + 50, 12, 2, COLORS.RUG_GOLD); // Bottom fringe
-                        renderer.rect(t.x + 14, t.y + 34, 4, 12, '#008000'); // Inner
+                        // If visited, maybe dim it or remove it? Let's keep it but maybe change color?
+                        // Or just keep it as is, but it's no longer interactive.
+                        let rugColor = t.visited ? '#555' : COLORS.RUG_GREEN;
+                        let fringeColor = t.visited ? '#777' : COLORS.RUG_GOLD;
+
+                        renderer.rect(t.x + 10, t.y + 30, 12, 20, rugColor);
+                        renderer.rect(t.x + 10, t.y + 28, 12, 2, fringeColor); // Top fringe
+                        renderer.rect(t.x + 10, t.y + 50, 12, 2, fringeColor); // Bottom fringe
+                        if (!t.visited) {
+                            renderer.rect(t.x + 14, t.y + 34, 4, 12, '#008000'); // Inner
+                        }
                     }
+                }
+
+                // Draw Prayer Progress Bar if praying
+                if (this.game.player.pose === 'pray' && this.prayerProgress > 0) {
+                    const p = this.game.player;
+                    renderer.rect(p.x, p.y - 10, 16, 4, '#000');
+                    renderer.rect(p.x, p.y - 10, 16 * (this.prayerProgress / this.maxPrayerProgress), 4, '#0f0');
                 }
             }
         }
@@ -799,7 +885,7 @@
             enter() {
                 this.game.player.x = 10;
                 this.game.player.y = 250;
-                this.game.ui.setMessage("Stage 3: Arafah. Stand near Mount Mercy and hold SPACE to Reflect.");
+                this.game.ui.setMessage("Stage 3: Arafah (9th Dhul Hijjah). Stand near Mount Mercy and hold SPACE to Reflect.");
                 this.game.ui.setHUD("Reflection: 0%");
             }
             update() {
@@ -1044,7 +1130,7 @@
             enter() {
                 this.game.player.x = 10;
                 this.game.player.y = 250;
-                this.game.ui.setMessage("Stage 5: Jamarat. Throw 7 stones at the LARGEST pillar (SPACE).");
+                this.game.ui.setMessage("Stage 5: Jamarat al-Aqaba (10th Dhul Hijjah). Throw 7 stones at the LARGEST pillar (SPACE).");
                 this.game.ui.setHUD(`Thrown: 0/${this.target}`);
             }
             update() {
@@ -1121,7 +1207,7 @@
                 ];
 
                 // Sacrifice Zone (right side, same y-axis)
-                this.sacrificeZone = { x: 320, y: 140, w: 60, h: 60 };
+                this.sacrificeZone = { x: 320, y: 160, w: 60, h: 60 };
 
                 // Barber Stall (centered between pen and sacrifice zone, same y-axis)
                 const barberX = (this.pen.x + this.pen.w + this.sacrificeZone.x) / 2 - 20; // Center and adjust for width
@@ -1308,6 +1394,7 @@
                     new Sign(this.safa.x + 15, this.safa.y - 10, "Safa"),
                     new Sign(this.marwa.x + 15, this.marwa.y - 10, "Marwa")
                 ];
+                this.saiComplete = false;
             }
 
             enter() {
@@ -1343,6 +1430,8 @@
                     if (p.x < t.x + t.w && p.x + p.w > t.x &&
                         p.y < t.y + t.h && p.y + p.h > t.y) {
 
+                        if (this.saiComplete) return;
+
                         if (!this.saiStarted) {
                             // First visit to Safa (Start point)
                             if (t === this.safa) {
@@ -1356,8 +1445,9 @@
                             this.game.ui.setHUD(`Sa'i: ${this.saiTrips}/${this.maxSai}`);
 
                             if (this.saiTrips >= this.maxSai) {
-                                this.game.ui.setMessage("Sa'i complete. One final Farewell Tawaf.");
-                                setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                                this.saiComplete = true;
+                                this.game.ui.setMessage("Sa'i complete. Return to Mina for Night 11.");
+                                setTimeout(() => { this.game.changeStage(new StageMinaReturn(this.game, 11, 12)); }, 2000);
                             } else {
                                 this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
                                 this.game.ui.setMessage(`Go to ${this.targetHill.name}.`);
@@ -1388,6 +1478,221 @@
                     for (let s of this.saiSigns) {
                         s.draw(renderer);
                     }
+                }
+            }
+        }
+
+        class StageMinaReturn extends Stage {
+            constructor(game, night, day) {
+                super(game);
+                this.night = night; // 11 or 12
+                this.day = day; // 12 or 13
+                this.mapW = 400;
+                this.mapH = 400;
+                this.tents = [];
+
+                // Generate non-overlapping tents
+                let attempts = 0;
+                while (this.tents.length < 20 && attempts < 1000) {
+                    let t = {
+                        x: Math.random() * (this.mapW - 60) + 10,
+                        y: Math.random() * (this.mapH - 60) + 10,
+                        w: 32, h: 32
+                    };
+                    let overlap = false;
+                    for (let other of this.tents) {
+                        if (t.x < other.x + other.w + 10 && t.x + t.w + 10 > other.x &&
+                            t.y < other.y + other.h + 10 && t.y + t.h + 10 > other.y) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+                    if (!overlap) this.tents.push(t);
+                    attempts++;
+                }
+
+                this.solids = [];
+                this.sleepProgress = 0;
+                this.maxSleep = 100;
+                this.zzzTime = 0;
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 10;
+                this.game.ui.setMessage(`Night ${this.night}: Mina. Find a tent and hold SPACE to sleep.`);
+                this.game.ui.setHUD("Sleep: 0%");
+            }
+            update() {
+                // Check if near any tent
+                let nearTent = false;
+                const p = this.game.player;
+                for (let t of this.tents) {
+                    if (p.x < t.x + t.w + 10 && p.x + p.w > t.x - 10 &&
+                        p.y < t.y + t.h + 10 && p.y + p.h > t.y - 10) {
+                        nearTent = true;
+                        break;
+                    }
+                }
+
+                if (nearTent && this.game.input.isDown('Space')) {
+                    this.sleepProgress += 0.5;
+                    if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
+                    this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
+                    this.zzzTime++;
+
+                    if (this.sleepProgress >= this.maxSleep) {
+                        this.game.ui.setMessage("You rested well. To Jamarat!");
+                        setTimeout(() => {
+                            this.game.changeStage(new StageJamaratReturn(this.game, this.day));
+                        }, 2000);
+                    }
+                }
+            }
+            draw(renderer) {
+                // Night sky background
+                renderer.rect(0, 0, this.mapW, this.mapH, COLORS.SKY_NIGHT);
+
+                // Draw tents
+                this.tents.sort((a, b) => a.y - b.y);
+                for (let t of this.tents) {
+                    renderer.drawTent(t.x, t.y);
+                }
+
+                // Draw player sleeping if space held
+                if (this.game.input.isDown('Space')) {
+                    this.game.player.pose = 'sleep';
+                    // Zzz animation
+                    renderer.ctx.fillStyle = '#fff';
+                    renderer.ctx.font = '8px "Press Start 2P"';
+                    const cycle = Math.floor(this.zzzTime / 20) % 3;
+                    const drift = (this.zzzTime % 20) * 0.3;
+                    if (cycle >= 0) renderer.ctx.fillText('Z', this.game.player.x + 4, this.game.player.y - 19 - drift);
+                    if (cycle >= 1) renderer.ctx.fillText('z', this.game.player.x + 10, this.game.player.y - 21 - drift);
+                    if (cycle >= 2) renderer.ctx.fillText('z', this.game.player.x + 16, this.game.player.y - 23 - drift);
+                } else {
+                    this.game.player.pose = 'stand';
+                }
+            }
+        }
+
+        class StageJamaratReturn extends Stage {
+            constructor(game, day) {
+                super(game);
+                this.day = day;
+                this.mapW = 300;
+                this.mapH = 300;
+                // 3 Pillars
+                this.pillars = [
+                    { x: 100, y: 50, w: 20, h: 40, size: 'small', stones: 0, done: false, name: "Small" },
+                    { x: 150, y: 120, w: 30, h: 50, size: 'medium', stones: 0, done: false, name: "Medium" },
+                    { x: 200, y: 200, w: 40, h: 60, size: 'large', stones: 0, done: false, name: "Large" }
+                ];
+
+                this.solids = [];
+                for (let p of this.pillars) {
+                    let rx = p.w + 10;
+                    let ry = 15;
+                    let cx = p.x + p.w / 2;
+                    let cy = p.y + p.h;
+                    this.solids.push({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 });
+                }
+                this.solids = this.solids.concat(this.pillars);
+
+                this.projectiles = [];
+                this.targetStones = 7;
+            }
+            enter() {
+                this.game.player.x = 10;
+                this.game.player.y = 250;
+                this.game.ui.setMessage(`Day ${this.day}: Jamarat. Stone ALL 3 pillars (7 each).`);
+                this.game.ui.setHUD("S:0 M:0 L:0");
+                this.updateHUD();
+            }
+            updateHUD() {
+                let status = this.pillars.map(p => `${p.name[0]}:${p.stones}`).join(' ');
+                this.game.ui.setHUD(status);
+            }
+            update() {
+                if (this.game.input.isJustPressed('Space')) {
+                    // Find nearest pillar to throw at
+                    let targetPillar = null;
+                    let minDist = 1000;
+                    const p = this.game.player;
+
+                    for (let pillar of this.pillars) {
+                        if (pillar.done) continue;
+                        let dx = (pillar.x + pillar.w / 2) - p.x;
+                        let dy = (pillar.y + pillar.h / 2) - p.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150 && dist < minDist) {
+                            minDist = dist;
+                            targetPillar = pillar;
+                        }
+                    }
+
+                    if (targetPillar) {
+                        this.projectiles.push({
+                            x: this.game.player.x + 8,
+                            y: this.game.player.y + 8,
+                            vx: 0, vy: 0, // Will calculate in update
+                            target: targetPillar
+                        });
+                    }
+                }
+
+                // Update projectiles
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    let p = this.projectiles[i];
+                    let tx = p.target.x + p.target.w / 2;
+                    let ty = p.target.y + p.target.h / 2;
+
+                    // Simple homing for visual effect
+                    p.x += (tx - p.x) * 0.15;
+                    p.y += (ty - p.y) * 0.15;
+
+                    if (Math.abs(p.x - tx) < 5 && Math.abs(p.y - ty) < 5) {
+                        this.projectiles.splice(i, 1);
+                        p.target.stones++;
+                        if (p.target.stones >= this.targetStones) {
+                            p.target.done = true;
+                            p.target.stones = this.targetStones; // Cap it
+                        }
+                        this.updateHUD();
+                        this.checkCompletion();
+                    }
+                }
+            }
+            checkCompletion() {
+                if (this.pillars.every(p => p.done)) {
+                    if (this.day === 12) {
+                        this.game.ui.setMessage("Day 12 Complete. Return to Mina for Night 12.");
+                        setTimeout(() => { this.game.changeStage(new StageMinaReturn(this.game, 12, 13)); }, 2000);
+                    } else {
+                        this.game.ui.setMessage("Day 13 Complete. Proceed to Farewell Tawaf.");
+                        setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                    }
+                }
+            }
+            draw(renderer) {
+                renderer.clear(COLORS.SAND);
+                for (let p of this.pillars) {
+                    // Draw Ring/Basin
+                    const sx = Math.floor(p.x - renderer.camera.x);
+                    const sy = Math.floor(p.y - renderer.camera.y);
+
+                    renderer.ctx.fillStyle = '#c0c0c0';
+                    renderer.ctx.strokeStyle = p.done ? '#00ff00' : '#808080'; // Green outline if done
+                    renderer.ctx.lineWidth = 3;
+
+                    renderer.ctx.beginPath();
+                    renderer.ctx.ellipse(sx + p.w / 2, sy + p.h, p.w + 10, 15, 0, 0, Math.PI * 2);
+                    renderer.ctx.fill();
+                    renderer.ctx.stroke();
+
+                    renderer.drawPillar(p.x, p.y, p.w, p.h);
+                }
+                for (let p of this.projectiles) {
+                    renderer.rect(p.x, p.y, 3, 3, COLORS.PEBBLE);
                 }
             }
         }
@@ -1507,7 +1812,7 @@
                     }
                 };
 
-                this.currentStage = new StageMeeqat(this);
+                this.currentStage = new StageIntro(this);
                 this.currentStage.enter();
 
                 this.lastTime = 0;
@@ -1532,7 +1837,9 @@
                 this.input.update();
 
                 this.currentStage.draw(this.renderer);
-                this.renderer.drawPlayer(this.player.x, this.player.y, this.player.isIhram, this.player.isHairCut, this.player.pose);
+                if (this.currentStage.showPlayer) {
+                    this.renderer.drawPlayer(this.player.x, this.player.y, this.player.isIhram, this.player.isHairCut, this.player.pose);
+                }
 
                 requestAnimationFrame(this.loop);
             }
