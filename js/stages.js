@@ -56,6 +56,154 @@ class StageIntro extends Stage {
     }
 }
 
+class StageCutscene extends Stage {
+    constructor(game, lines, nextStage) {
+        super(game);
+        this.lines = lines;
+        this.nextStage = nextStage;
+        this.showPlayer = false;
+    }
+    enter() {
+        this.game.ui.setMessage("");
+        this.game.ui.setHUD("");
+    }
+    update() {
+        if (this.game.input.isJustPressed('Space')) {
+            this.game.changeStage(this.nextStage);
+        }
+    }
+    draw(renderer) {
+        renderer.clear('#000');
+        renderer.ctx.fillStyle = '#fff';
+        renderer.ctx.textAlign = 'center';
+        renderer.ctx.font = '6px "Press Start 2P"';
+
+        let y = LOGICAL_H / 2 - (this.lines.length * 10) / 2;
+        for (let line of this.lines) {
+            renderer.ctx.fillText(line, LOGICAL_W / 2, y);
+            y += 15;
+        }
+
+        renderer.ctx.font = '4px "Press Start 2P"';
+        renderer.ctx.fillStyle = '#888';
+        renderer.ctx.fillText("[PRESS SPACE TO CONTINUE]", LOGICAL_W / 2, LOGICAL_H - 20);
+
+        renderer.ctx.textAlign = 'left';
+    }
+}
+
+class StageBusCutscene extends Stage {
+    constructor(game) {
+        super(game);
+        this.timer = 0;
+        this.duration = 300; // ~5 seconds at 60fps
+        this.scrollX = 0;
+        this.showPlayer = false; // Don't render the actual player sprite
+    }
+    enter() {
+        this.game.ui.setMessage("Traveling to Mina...");
+        this.game.ui.setHUD("");
+    }
+    update() {
+        this.timer++;
+        this.scrollX += 2;
+
+        if (this.timer >= this.duration || this.game.input.isJustPressed('Space')) {
+            this.game.changeStage(new StageMina(this.game));
+        }
+    }
+    draw(renderer) {
+        // 1. Sky
+        renderer.rect(0, 0, this.mapW, this.mapH, COLORS.SKY_DAY);
+
+        // 2. Mountains (Far background - slow parallax, triangular)
+        const mountOffset = (this.scrollX * 0.3) % 120;
+        for (let i = -1; i < this.mapW / 120 + 2; i++) {
+            const mx = i * 120 - mountOffset;
+            // Draw triangular mountain
+            // Base
+            renderer.rect(mx + 20, 95, 40, 5, COLORS.MOUNTAIN_DARK);
+            // Layers going up to create triangle
+            renderer.rect(mx + 24, 90, 32, 5, COLORS.MOUNTAIN_DARK);
+            renderer.rect(mx + 28, 85, 24, 5, COLORS.MOUNTAIN);
+            renderer.rect(mx + 32, 80, 16, 5, COLORS.MOUNTAIN);
+            renderer.rect(mx + 36, 75, 8, 5, COLORS.MOUNTAIN);
+            // Peak
+            renderer.rect(mx + 38, 70, 4, 5, '#888');
+        }
+
+        // 3. Desert/Sand
+        renderer.rect(0, 100, this.mapW, this.mapH - 100, COLORS.SAND);
+
+        // 4. Cacti (medium parallax)
+        const cactusOffset = (this.scrollX * 0.5) % 40;
+        for (let i = 0; i < 5; i++) {
+            const cx = i * 40 - cactusOffset;
+            // Cactus body
+            renderer.rect(cx + 10, 90, 6, 12, '#2d5016');
+            // Arms
+            renderer.rect(cx + 7, 94, 3, 4, '#2d5016');
+            renderer.rect(cx + 16, 96, 3, 4, '#2d5016');
+        }
+
+        // 5. Road (Fast)
+        const roadY = 110;
+        renderer.rect(0, roadY, this.mapW, 30, '#555'); // Road surface
+        // Road lines
+        const lineOffset = (this.scrollX * 2) % 20;
+        for (let i = -1; i < this.mapW / 20 + 1; i++) {
+            renderer.rect(i * 20 - lineOffset, roadY + 14, 10, 2, '#fff');
+        }
+
+        // 6. Bus (Static X, Bounce Y)
+        const bounce = Math.sin(this.timer * 0.2) * 1;
+        const bx = 50;
+        const by = roadY - 20 + bounce;
+
+        // Body
+        renderer.rect(bx, by, 70, 30, '#fff'); // Main body
+        renderer.rect(bx + 70, by + 10, 5, 20, '#fff'); // Front nose
+        renderer.rect(bx, by + 12, 75, 3, '#ccc'); // Stripe
+
+        // Larger Windows
+        renderer.rect(bx + 8, by + 3, 12, 12, '#446688');
+        renderer.rect(bx + 24, by + 3, 12, 12, '#446688');
+        renderer.rect(bx + 40, by + 3, 12, 12, '#446688');
+        renderer.rect(bx + 56, by + 3, 12, 12, '#446688'); // Driver
+
+        // Pilgrim heads in windows
+        // Window 1
+        renderer.rect(bx + 12, by + 7, 4, 5, COLORS.SKIN);
+        renderer.rect(bx + 11, by + 6, 6, 2, '#333'); // Hair
+
+        // Window 2
+        renderer.rect(bx + 28, by + 7, 4, 5, COLORS.SKIN);
+        renderer.rect(bx + 27, by + 6, 6, 2, '#333'); // Hair
+
+        // Window 3 - Player in white Ihram
+        renderer.rect(bx + 44, by + 7, 4, 5, COLORS.SKIN);
+        renderer.rect(bx + 43, by + 6, 6, 2, '#fff'); // White Ihram head covering
+
+        // Window 4 - Driver
+        renderer.rect(bx + 60, by + 7, 4, 5, COLORS.SKIN);
+        renderer.rect(bx + 59, by + 6, 6, 2, '#333'); // Hair
+
+        // Wheels
+        const wheelAnim = (Math.floor(this.timer / 5) % 2 === 0) ? 0 : 1;
+        renderer.rect(bx + 12, by + 27, 10, 10, '#111');
+        renderer.rect(bx + 50, by + 27, 10, 10, '#111');
+
+        // Wheel spokes/detail
+        if (wheelAnim) {
+            renderer.rect(bx + 15, by + 30, 4, 4, '#555');
+            renderer.rect(bx + 53, by + 30, 4, 4, '#555');
+        } else {
+            renderer.rect(bx + 16, by + 31, 2, 2, '#555');
+            renderer.rect(bx + 54, by + 31, 2, 2, '#555');
+        }
+    }
+}
+
 class StageMeeqat extends Stage {
     constructor(game) {
         super(game);
@@ -78,7 +226,9 @@ class StageMeeqat extends Stage {
                 setTimeout(() => {
                     this.game.ui.setMessage("Ihram donned. Intention made. Go forth!");
                 }, 1500);
-                setTimeout(() => { this.game.changeStage(new StageMina(this.game)); }, 3500);
+                setTimeout(() => {
+                    this.game.changeStage(new StageBusCutscene(this.game));
+                }, 3500);
             }
         }
     }
@@ -237,7 +387,13 @@ class StageMina extends Stage {
 
                         if (this.prayers >= this.maxPrayers) {
                             this.game.ui.setMessage("All prayers done. Proceeding to Arafah...");
-                            setTimeout(() => { this.game.changeStage(new StageArafah(this.game)); }, 2000);
+                            setTimeout(() => {
+                                this.game.changeStage(new StageCutscene(this.game, [
+                                    "The sun rises on the 9th.",
+                                    "The most important day.",
+                                    "Destination: Arafah"
+                                ], new StageArafah(this.game)));
+                            }, 2000);
                         }
                     }
                 } else {
@@ -337,7 +493,13 @@ class StageArafah extends Stage {
             this.game.ui.setHUD(`Reflection: ${Math.floor(this.reflectionProgress)}%`);
             if (this.reflectionProgress >= this.maxReflection) {
                 this.game.ui.setMessage("Sun sets on Arafah. Proceeding to Muzdalifah...");
-                setTimeout(() => { this.game.changeStage(new StageMuzdalifah(this.game)); }, 2000);
+                setTimeout(() => {
+                    this.game.changeStage(new StageCutscene(this.game, [
+                        "The sun sets on Arafah.",
+                        "Forgiveness sought.",
+                        "Destination: Muzdalifah"
+                    ], new StageMuzdalifah(this.game)));
+                }, 2000);
             }
         }
 
@@ -440,7 +602,13 @@ class StageMuzdalifah extends Stage {
                         this.game.ui.setHUD(`Pebbles: ${this.collected}/${this.target}`);
                         if (this.collected >= this.target) {
                             this.game.ui.setMessage("Pebbles collected. To Jamarat!");
-                            setTimeout(() => { this.game.changeStage(new StageJamarat(this.game)); }, 2000);
+                            setTimeout(() => {
+                                this.game.changeStage(new StageCutscene(this.game, [
+                                    "Fajr prayer performed.",
+                                    "Pebbles collected.",
+                                    "Destination: Jamarat"
+                                ], new StageJamarat(this.game)));
+                            }, 2000);
                         }
                         break;
                     }
@@ -607,7 +775,12 @@ class StageJamarat extends Stage {
                 this.game.ui.setHUD(`Thrown: ${this.stonesThrown}/${this.target}`);
                 if (this.stonesThrown >= this.target) {
                     this.game.ui.setMessage("Stoning complete. Proceed to Sacrifice.");
-                    setTimeout(() => { this.game.changeStage(new StageSacrifice(this.game)); }, 2000);
+                    setTimeout(() => {
+                        this.game.changeStage(new StageCutscene(this.game, [
+                            "The big devil stoned.",
+                            "Destination: Sacrifice"
+                        ], new StageSacrifice(this.game)));
+                    }, 2000);
                 }
             }
         }
@@ -756,7 +929,13 @@ class StageSacrifice extends Stage {
                     this.hairCutDone = true;
                     this.game.player.isHairCut = true;
                     this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
-                    setTimeout(() => { this.game.changeStage(new StageGrandMosque(this.game)); }, 2000);
+                    setTimeout(() => {
+                        this.game.changeStage(new StageCutscene(this.game, [
+                            "Sacrifice complete.",
+                            "Hair trimmed.",
+                            "Destination: Grand Mosque"
+                        ], new StageGrandMosque(this.game)));
+                    }, 2000);
                 }
             }
         }
@@ -900,7 +1079,12 @@ class StageGrandMosque extends Stage {
                     if (this.saiTrips >= this.maxSai) {
                         this.saiComplete = true;
                         this.game.ui.setMessage("Sa'i complete. Return to Mina for Night 11.");
-                        setTimeout(() => { this.game.changeStage(new StageMinaReturn(this.game, 11, 12)); }, 2000);
+                        setTimeout(() => {
+                            this.game.changeStage(new StageCutscene(this.game, [
+                                "Tawaf & Sa'i complete.",
+                                "Destination: Mina (Night 11)"
+                            ], new StageMinaReturn(this.game, 11, 12)));
+                        }, 2000);
                     } else {
                         this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
                         this.game.ui.setMessage(`Go to ${this.targetHill.name}.`);
@@ -996,7 +1180,10 @@ class StageMinaReturn extends Stage {
             if (this.sleepProgress >= this.maxSleep) {
                 this.game.ui.setMessage("You rested well. To Jamarat!");
                 setTimeout(() => {
-                    this.game.changeStage(new StageJamaratReturn(this.game, this.day));
+                    this.game.changeStage(new StageCutscene(this.game, [
+                        "A night of rest.",
+                        "Destination: Jamarat"
+                    ], new StageJamaratReturn(this.game, this.day)));
                 }, 2000);
             }
         }
@@ -1119,10 +1306,20 @@ class StageJamaratReturn extends Stage {
         if (this.pillars.every(p => p.done)) {
             if (this.day === 12) {
                 this.game.ui.setMessage("Day 12 Complete. Return to Mina for Night 12.");
-                setTimeout(() => { this.game.changeStage(new StageMinaReturn(this.game, 12, 13)); }, 2000);
+                setTimeout(() => {
+                    this.game.changeStage(new StageCutscene(this.game, [
+                        "Day 12 Complete.",
+                        "Destination: Mina (Night 12)"
+                    ], new StageMinaReturn(this.game, 12, 13)));
+                }, 2000);
             } else {
                 this.game.ui.setMessage("Day 13 Complete. Proceed to Farewell Tawaf.");
-                setTimeout(() => { this.game.changeStage(new StageFarewell(this.game)); }, 2000);
+                setTimeout(() => {
+                    this.game.changeStage(new StageCutscene(this.game, [
+                        "Days of Tashreeq end.",
+                        "Destination: Farewell Tawaf"
+                    ], new StageFarewell(this.game)));
+                }, 2000);
             }
         }
     }
