@@ -11,6 +11,7 @@ class Game {
         this.renderer = new Renderer(this.ctx);
         this.camera = new Camera(LOGICAL_W, LOGICAL_H);
         this.player = new Player(10, 10);
+        this.audio = new AudioManager();
 
         this.ui = {
             setMessage: (msg) => {
@@ -39,11 +40,26 @@ class Game {
         const dt = timestamp - this.lastTime;
         this.lastTime = timestamp;
 
+        // Track previous position for footstep sounds
+        const prevX = this.player.x;
+        const prevY = this.player.y;
+
         this.currentStage.update();
         this.player.update(this.input, this.currentStage.solids, this.currentStage.mapW, this.currentStage.mapH);
         this.camera.follow(this.player, this.currentStage.mapW, this.currentStage.mapH);
         this.renderer.setCamera(this.camera);
         this.input.update();
+
+        // Play footstep sounds when moving (throttled)
+        if (this.currentStage.showPlayer) {
+            const moved = Math.abs(this.player.x - prevX) > 0.1 || Math.abs(this.player.y - prevY) > 0.1;
+            if (moved) {
+                this.footstepCounter = (this.footstepCounter || 0) + 1;
+                if (this.footstepCounter % 12 === 0) { // Every 12 frames (~5 footsteps per second)
+                    this.audio.playFootstep();
+                }
+            }
+        }
 
         this.currentStage.draw(this.renderer);
         if (this.currentStage.showPlayer) {
