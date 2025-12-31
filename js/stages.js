@@ -19,7 +19,7 @@ class StageIntro extends Stage {
         this.showPlayer = false;
     }
     enter() {
-        this.game.ui.setMessage("Welcome. Press SPACE to begin your journey.");
+        this.game.ui.setMessage("Welcome. Press SPACE or Tap A (Action) to begin.");
         this.game.ui.setHUD("");
     }
     update() {
@@ -126,6 +126,10 @@ class StageBusCutscene extends Stage {
         this.showPlayer = false; // Don't render the actual player sprite
     }
     enter() {
+        // Reset player for camera safety (camera follows player)
+        this.game.player.x = 50;
+        this.game.player.y = 100;
+
         this.game.ui.setMessage(this.message);
         this.game.ui.setHUD("");
         this.game.audio.startBusEngine();
@@ -268,6 +272,7 @@ class StageMeeqat extends Stage {
             if (p.x < r.x + r.w + 10 && p.x + p.w > r.x - 10 &&
                 p.y < r.y + r.h + 10 && p.y + p.h > r.y - 10) {
                 this.game.player.isIhram = true;
+                this.game.audio.playStageComplete();
                 this.game.ui.setMessage("Labbayka Hajjan! (Here I am for Hajj)");
                 setTimeout(() => {
                     this.game.ui.setMessage("Ihram donned. Intention made. Go forth!");
@@ -567,11 +572,13 @@ class StageArafah extends Stage {
         const m = this.mountain;
         const nearMountain = (p.x < m.x + m.w + 20 && p.x + p.w > m.x - 20 &&
             p.y < m.y + m.h + 20 && p.y + p.h > m.y - 20);
-        if (nearMountain && this.game.input.isDown('Space')) {
+        if (nearMountain && this.game.input.isDown('Space') && !this.complete) {
             this.reflectionProgress += 0.5;
             if (this.reflectionProgress > this.maxReflection) this.reflectionProgress = this.maxReflection;
             this.game.ui.setHUD(`Reflection: ${Math.floor(this.reflectionProgress)}%`);
             if (this.reflectionProgress >= this.maxReflection) {
+                this.complete = true;
+                this.game.audio.playComplete();
                 this.game.ui.setMessage("Sun sets on Arafah. Proceeding to Muzdalifah...");
                 setTimeout(() => {
                     this.game.changeStage(new StageBusCutscene(this.game, new StageMuzdalifah(this.game), "Traveling to Muzdalifah...", true));
@@ -960,6 +967,7 @@ class StageSacrifice extends Stage {
                         a.following = true;
                         this.currentAnimal = a;
                         this.game.ui.setMessage("Animal is following. Lead it to the Sacrifice Zone.");
+                        this.game.audio.playSheep();
                         break;
                     }
                 }
@@ -999,18 +1007,25 @@ class StageSacrifice extends Stage {
         }
 
         // 3. Barber Interaction
-        if (this.sacrificeDone && !this.hairCutDone) {
+        if (this.sacrificeDone && !this.hairCutDone && !this.isTrimming) {
             const b = this.barber;
             if (p.x < b.x + b.w + 10 && p.x + p.w > b.x - 10 &&
                 p.y < b.y + b.h + 10 && p.y + p.h > b.y - 10) {
                 if (this.game.input.isJustPressed('Space')) {
-                    this.hairCutDone = true;
-                    this.game.player.isHairCut = true;
-                    this.game.audio.playTrim();
-                    this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
-                    setTimeout(() => {
-                        this.game.changeStage(new StageBusCutscene(this.game, new StageGrandMosque(this.game), "Traveling to Grand Mosque..."));
-                    }, 2000);
+                    this.isTrimming = true;
+                    this.game.ui.setMessage("Trimming...");
+                    const sound = this.game.audio.playTrim();
+
+                    // Wait for sound to finish
+                    sound.onended = () => {
+                        this.hairCutDone = true;
+                        this.isTrimming = false;
+                        this.game.player.isHairCut = true;
+                        this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
+                        setTimeout(() => {
+                            this.game.changeStage(new StageBusCutscene(this.game, new StageGrandMosque(this.game), "Traveling to Grand Mosque..."));
+                        }, 2000);
+                    };
                 }
             }
         }
@@ -1243,13 +1258,14 @@ class StageMinaReturn extends Stage {
             }
         }
 
-        if (nearTent && this.game.input.isDown('Space')) {
+        if (nearTent && this.game.input.isDown('Space') && !this.complete) {
             this.sleepProgress += 0.5;
             if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
             this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
             this.zzzTime++;
 
             if (this.sleepProgress >= this.maxSleep) {
+                this.complete = true;
                 this.game.audio.playComplete();
                 this.game.ui.setMessage("You rested well. To Jamarat!");
                 setTimeout(() => {

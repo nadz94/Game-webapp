@@ -8,7 +8,7 @@ const LOGICAL_H = SCREEN_H / SCALE;
 
 const COLORS = {
     SAND: '#e0c068',
-    SAND_DARK: '#c0a050',
+    SAND_DARK: '#2b2b2b',
     SKY_DAY: '#4080ff',
     SKY_NIGHT: '#101030',
     WHITE: '#ffffff',

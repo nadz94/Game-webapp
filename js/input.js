@@ -14,6 +14,29 @@ class Input {
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
         });
+
+        // Touch Control Bindings
+        this.bindTouch('btn-up', 'ArrowUp');
+        this.bindTouch('btn-down', 'ArrowDown');
+        this.bindTouch('btn-left', 'ArrowLeft');
+        this.bindTouch('btn-right', 'ArrowRight');
+        this.bindTouch('btn-action', 'Space');
+    }
+
+    bindTouch(elementId, keyCode) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const setKey = (active) => {
+            this.keys[keyCode] = active;
+        };
+
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(true); }, { passive: false });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); setKey(false); }, { passive: false });
+        // Also handle mouse for testing on desktop if controls are visible
+        el.addEventListener('mousedown', (e) => { e.preventDefault(); setKey(true); });
+        el.addEventListener('mouseup', (e) => { e.preventDefault(); setKey(false); });
+        el.addEventListener('mouseleave', (e) => { setKey(false); });
     }
 
     update() {
