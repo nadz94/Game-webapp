@@ -10,3 +10,7 @@ function lerpColor(a, b, amount) {
 
     return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
 }
+
+function isMobile() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth < 800);
+}

@@ -13,6 +13,9 @@ class Game {
         this.player = new Player(10, 10);
         this.audio = new AudioManager();
 
+        // Mobile audio unlock: init on first interaction
+        this.input.onFirstInteraction = () => this.audio.init();
+
         this.ui = {
             setMessage: (msg) => {
                 document.getElementById('message-box').innerText = msg;

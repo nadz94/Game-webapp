@@ -54,13 +54,44 @@ class AudioManager {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.initialized = true;
 
-            // Resume context if suspended (common in some browsers)
-            if (this.ctx.state === 'suspended') {
-                this.ctx.resume();
-            }
+            // Unlock audio for mobile
+            this.unlock();
         } catch (e) {
             console.warn('Web Audio API not supported', e);
         }
+    }
+
+    unlock() {
+        if (!this.ctx) return;
+
+        // Resume context if suspended
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+
+        // Play silent buffer to unlock audio on iOS
+        const buffer = this.ctx.createBuffer(1, 1, 22050);
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.ctx.destination);
+        source.start(0);
+
+        // Also touch HTML Audio instances
+        Object.values(this.sounds).forEach(s => {
+            s.play().then(() => {
+                s.pause();
+                s.currentTime = 0;
+            }).catch(() => { });
+        });
+
+        Object.values(this.pools).forEach(p => {
+            p.pool.forEach(s => {
+                s.play().then(() => {
+                    s.pause();
+                    s.currentTime = 0;
+                }).catch(() => { });
+            });
+        });
     }
 
     // Play a simple tone

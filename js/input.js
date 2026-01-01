@@ -3,8 +3,19 @@ class Input {
     constructor() {
         this.keys = {};
         this.prevKeys = {};
+        this.firstInteraction = false;
+        this.onFirstInteraction = null;
+
+        const handleFirstInteraction = () => {
+            if (!this.firstInteraction) {
+                this.firstInteraction = true;
+                if (this.onFirstInteraction) this.onFirstInteraction();
+                // Remove listeners to cleanup? No, we still need them for input.
+            }
+        };
 
         window.addEventListener('keydown', (e) => {
+            handleFirstInteraction();
             this.keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                 e.preventDefault();
@@ -14,6 +25,10 @@ class Input {
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
         });
+
+        // Use capture phase or just ensure it runs for all events
+        window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+        window.addEventListener('mousedown', handleFirstInteraction, { passive: true });
 
         // Touch Control Bindings
         this.bindTouch('btn-up', 'ArrowUp');
