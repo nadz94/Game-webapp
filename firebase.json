@@ -13,10 +13,7 @@
     "rewrites": [
       {
         "source": "**",
-        "run": {
-          "serviceId": "hajj-8bit",
-          "region": "europe-west2"
-        }
+        "destination": "/index.html"
       }
     ]
   }
