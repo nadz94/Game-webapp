@@ -147,7 +147,7 @@ class AudioManager {
     playFootstep() {
         // "Mario-like" subtle tap: Low pass, short duration
         // Increased volume to 0.14
-        this.playNoise(0.04, 0.14, 350);
+        this.playNoise(0.04, 0.18, 350);
     }
 
     // Bus engine - loop mp3
