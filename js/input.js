@@ -31,91 +31,11 @@ class Input {
         window.addEventListener('mousedown', handleFirstInteraction, { passive: true });
 
         // Initial Bindings
-        this.initJoystick();
+        this.bindTouch('btn-up', 'ArrowUp');
+        this.bindTouch('btn-down', 'ArrowDown');
+        this.bindTouch('btn-left', 'ArrowLeft');
+        this.bindTouch('btn-right', 'ArrowRight');
         this.bindTouch('btn-action', 'Space');
-    }
-
-    initJoystick() {
-        const zone = document.getElementById('joystick-zone');
-        const base = document.getElementById('joystick-base');
-        const stick = document.getElementById('joystick-stick');
-        if (!zone || !base || !stick) return;
-
-        let active = false;
-        let rect, centerX, centerY, maxDist;
-
-        const updateGeometry = () => {
-            rect = base.getBoundingClientRect();
-            centerX = rect.left + rect.width / 2;
-            centerY = rect.top + rect.height / 2;
-            maxDist = rect.width / 2;
-        };
-
-        const handleMove = (e) => {
-            if (!active) return;
-            const touch = e.targetTouches ? e.targetTouches[0] : e;
-            let dx = touch.clientX - centerX;
-            let dy = touch.clientY - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            // Limit stick movement to radius
-            const ratio = dist > maxDist ? maxDist / dist : 1;
-            const lx = dx * ratio;
-            const ly = dy * ratio;
-
-            // Update UI
-            stick.style.left = `${50 + (lx / maxDist) * 50}%`;
-            stick.style.top = `${50 + (ly / maxDist) * 50}%`;
-            stick.style.background = 'rgba(255, 255, 255, 0.7)';
-
-            // Set digital keys based on direction (threshold 0.3)
-            const th = 0.3;
-            const nx = lx / maxDist;
-            const ny = ly / maxDist;
-
-            this.keys['ArrowUp'] = ny < -th;
-            this.keys['ArrowDown'] = ny > th;
-            this.keys['ArrowLeft'] = nx < -th;
-            this.keys['ArrowRight'] = nx > th;
-        };
-
-        const handleEnd = () => {
-            active = false;
-            stick.style.left = stick.style.top = '50%';
-            stick.style.background = '';
-            this.keys['ArrowUp'] = this.keys['ArrowDown'] = false;
-            this.keys['ArrowLeft'] = this.keys['ArrowRight'] = false;
-        };
-
-        zone.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            active = true;
-            updateGeometry();
-            handleMove(e);
-        }, { passive: false });
-
-        zone.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            handleMove(e);
-        }, { passive: false });
-
-        zone.addEventListener('touchend', handleEnd);
-        zone.addEventListener('touchcancel', handleEnd);
-
-        // Optional: Mouse support for testing in dev tools
-        zone.addEventListener('mousedown', (e) => {
-            active = true;
-            updateGeometry();
-            handleMove(e);
-            const moveHandler = (me) => handleMove(me);
-            const upHandler = () => {
-                handleEnd();
-                window.removeEventListener('mousemove', moveHandler);
-                window.removeEventListener('mouseup', upHandler);
-            };
-            window.addEventListener('mousemove', moveHandler);
-            window.addEventListener('mouseup', upHandler);
-        });
     }
 
     bindTouch(elementId, keyCode) {
