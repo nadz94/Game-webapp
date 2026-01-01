@@ -69,29 +69,32 @@ class AudioManager {
             this.ctx.resume();
         }
 
-        // Play silent buffer to unlock audio on iOS
+        // Play silent buffer to unlock Web Audio API on iOS
         const buffer = this.ctx.createBuffer(1, 1, 22050);
         const source = this.ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(this.ctx.destination);
         source.start(0);
 
-        // Also touch HTML Audio instances
-        Object.values(this.sounds).forEach(s => {
+        // Also "touch" HTML Audio instances to unlock them for later use
+        // We set volume to 0 and mute them temporarily so they aren't audible
+        const touchAudio = (s) => {
+            const oldVol = s.volume;
+            s.volume = 0;
+            s.muted = true;
             s.play().then(() => {
                 s.pause();
                 s.currentTime = 0;
-            }).catch(() => { });
-        });
-
-        Object.values(this.pools).forEach(p => {
-            p.pool.forEach(s => {
-                s.play().then(() => {
-                    s.pause();
-                    s.currentTime = 0;
-                }).catch(() => { });
+                s.muted = false;
+                s.volume = oldVol;
+            }).catch(() => {
+                s.muted = false;
+                s.volume = oldVol;
             });
-        });
+        };
+
+        Object.values(this.sounds).forEach(touchAudio);
+        Object.values(this.pools).forEach(p => p.pool.forEach(touchAudio));
     }
 
     // Play a simple tone
