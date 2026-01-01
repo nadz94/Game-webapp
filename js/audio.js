@@ -47,54 +47,39 @@ class AudioManager {
         this.sounds.bus.loop = true;
     }
 
-    // Initialize audio context (must be called after user interaction)
-    init() {
-        if (this.initialized) return;
-        try {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            this.initialized = true;
-
-            // Unlock audio for mobile
-            this.unlock();
-        } catch (e) {
-            console.warn('Web Audio API not supported', e);
+    // Aggressive Resume: Call this on ANY user interaction
+    resumeContext() {
+        if (!this.ctx) {
+            try {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.initialized = true;
+            } catch (e) {
+                console.warn('Web Audio API not supported', e);
+                return;
+            }
         }
+
+        if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+            this.ctx.resume().then(() => {
+                // Success
+            }).catch(e => console.warn('Audio resume failed', e));
+        }
+
+        // Always try to wake up the engine with a silent oscillator
+        this.tryWakeUp();
     }
 
-    unlock() {
+    tryWakeUp() {
         if (!this.ctx) return;
-
-        // Resume context if suspended
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
+        try {
+            const buffer = this.ctx.createBuffer(1, 1, 22050);
+            const source = this.ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.ctx.destination);
+            source.start(0);
+        } catch (e) {
+            // Ignore
         }
-
-        // Play silent buffer to unlock Web Audio API on iOS
-        const buffer = this.ctx.createBuffer(1, 1, 22050);
-        const source = this.ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.ctx.destination);
-        source.start(0);
-
-        // Also "touch" HTML Audio instances to unlock them for later use
-        // We set volume to 0 and mute them temporarily so they aren't audible
-        const touchAudio = (s) => {
-            const oldVol = s.volume || 0.5; // Default if 0
-            s.volume = 0;
-            s.muted = true;
-            s.play().then(() => {
-                s.pause();
-                s.currentTime = 0;
-                s.volume = oldVol; // Restore volume before unmuting
-                s.muted = false;
-            }).catch(() => {
-                s.volume = oldVol;
-                s.muted = false;
-            });
-        };
-
-        Object.values(this.sounds).forEach(touchAudio);
-        Object.values(this.pools).forEach(p => p.pool.forEach(touchAudio));
     }
 
     // Play a simple tone

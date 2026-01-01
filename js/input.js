@@ -3,11 +3,10 @@ class Input {
     constructor() {
         this.keys = {};
         this.prevKeys = {};
-        this.firstInteraction = false;
-        this.onFirstInteraction = null;
+        this.onInteraction = null;
 
         window.addEventListener('keydown', (e) => {
-            this.triggerFirstInteraction();
+            this.triggerInteraction();
             this.keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                 e.preventDefault();
@@ -19,8 +18,8 @@ class Input {
         });
 
         // Use capture phase or just ensure it runs for all events
-        window.addEventListener('touchstart', () => this.triggerFirstInteraction(), { passive: true });
-        window.addEventListener('mousedown', () => this.triggerFirstInteraction(), { passive: true });
+        window.addEventListener('touchstart', () => this.triggerInteraction(), { passive: true });
+        window.addEventListener('mousedown', () => this.triggerInteraction(), { passive: true });
 
         // Initial Bindings
         this.bindTouch('btn-up', 'ArrowUp');
@@ -30,11 +29,8 @@ class Input {
         this.bindTouch('btn-action', 'Space');
     }
 
-    triggerFirstInteraction() {
-        if (!this.firstInteraction) {
-            this.firstInteraction = true;
-            if (this.onFirstInteraction) this.onFirstInteraction();
-        }
+    triggerInteraction() {
+        if (this.onInteraction) this.onInteraction();
     }
 
     bindTouch(elementId, keyCode) {
@@ -47,19 +43,19 @@ class Input {
 
         el.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            this.triggerFirstInteraction(); // Explicitly trigger audio unlock
+            this.triggerInteraction(); // Explicitly trigger audio unlock
             setKey(true);
         }, { passive: false });
 
         el.addEventListener('touchend', (e) => {
             e.preventDefault();
-            this.triggerFirstInteraction();
+            this.triggerInteraction();
             setKey(false);
         }, { passive: false });
 
         el.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            this.triggerFirstInteraction();
+            this.triggerInteraction();
             setKey(true);
         });
 

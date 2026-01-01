@@ -14,7 +14,8 @@ class Game {
         this.audio = new AudioManager();
 
         // Mobile audio unlock: init on first interaction
-        this.input.onFirstInteraction = () => this.audio.init();
+        // Mobile audio: Attempt to resume context on every interaction
+        this.input.onInteraction = () => this.audio.resumeContext();
 
         this.ui = {
             setMessage: (msg) => {
