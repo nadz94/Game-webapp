@@ -100,6 +100,7 @@ class AudioManager {
     // Play a simple tone
     playTone(frequency, duration, type = 'square', volume = 0.15) {
         if (!this.initialized) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -120,6 +121,7 @@ class AudioManager {
     // Play noise burst
     playNoise(duration, volume = 0.1, frequency = 1000) {
         if (!this.initialized) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const bufferSize = this.ctx.sampleRate * duration;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -172,6 +174,7 @@ class AudioManager {
     // Throw - rising whoosh
     playThrow() {
         if (!this.initialized) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();

@@ -6,16 +6,8 @@ class Input {
         this.firstInteraction = false;
         this.onFirstInteraction = null;
 
-        const handleFirstInteraction = () => {
-            if (!this.firstInteraction) {
-                this.firstInteraction = true;
-                if (this.onFirstInteraction) this.onFirstInteraction();
-                // Remove listeners to cleanup? No, we still need them for input.
-            }
-        };
-
         window.addEventListener('keydown', (e) => {
-            handleFirstInteraction();
+            this.triggerFirstInteraction();
             this.keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                 e.preventDefault();
@@ -27,8 +19,8 @@ class Input {
         });
 
         // Use capture phase or just ensure it runs for all events
-        window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
-        window.addEventListener('mousedown', handleFirstInteraction, { passive: true });
+        window.addEventListener('touchstart', () => this.triggerFirstInteraction(), { passive: true });
+        window.addEventListener('mousedown', () => this.triggerFirstInteraction(), { passive: true });
 
         // Initial Bindings
         this.bindTouch('btn-up', 'ArrowUp');
@@ -36,6 +28,13 @@ class Input {
         this.bindTouch('btn-left', 'ArrowLeft');
         this.bindTouch('btn-right', 'ArrowRight');
         this.bindTouch('btn-action', 'Space');
+    }
+
+    triggerFirstInteraction() {
+        if (!this.firstInteraction) {
+            this.firstInteraction = true;
+            if (this.onFirstInteraction) this.onFirstInteraction();
+        }
     }
 
     bindTouch(elementId, keyCode) {
@@ -46,11 +45,28 @@ class Input {
             this.keys[keyCode] = active;
         };
 
-        el.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(true); }, { passive: false });
-        el.addEventListener('touchend', (e) => { e.preventDefault(); setKey(false); }, { passive: false });
+        el.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.triggerFirstInteraction(); // Explicitly trigger audio unlock
+            setKey(true);
+        }, { passive: false });
 
-        el.addEventListener('mousedown', (e) => { e.preventDefault(); setKey(true); });
-        el.addEventListener('mouseup', (e) => { e.preventDefault(); setKey(false); });
+        el.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.triggerFirstInteraction();
+            setKey(false);
+        }, { passive: false });
+
+        el.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.triggerFirstInteraction();
+            setKey(true);
+        });
+
+        el.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            setKey(false);
+        });
         el.addEventListener('mouseleave', (e) => { setKey(false); });
     }
 
