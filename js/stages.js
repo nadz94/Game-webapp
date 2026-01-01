@@ -595,19 +595,21 @@ class StageArafah extends Stage {
         const nearMountain = (p.x < m.x + m.w + 20 && p.x + p.w > m.x - 20 &&
             p.y < m.y + m.h + 20 && p.y + p.h > m.y - 20);
         if (nearMountain && this.game.input.isDown('Space') && !this.complete) {
+            this.game.player.pose = 'pray';
             this.reflectionProgress += 0.5;
             if (this.reflectionProgress > this.maxReflection) this.reflectionProgress = this.maxReflection;
             this.game.ui.setHUD(`Reflection: ${Math.floor(this.reflectionProgress)}%`);
-            if (this.reflectionProgress >= this.maxReflection) {
-                this.complete = true;
-                this.game.audio.playComplete();
-                this.game.ui.setMessage("Sun sets on Arafah. Proceeding to Muzdalifah...");
-                setTimeout(() => {
-                    this.game.changeStage(new StageBusCutscene(this.game, new StageMuzdalifah(this.game), "Traveling to Muzdalifah...", true));
-                }, 2000);
-            }
+        } else {
+            this.game.player.pose = 'stand';
         }
-
+        if (this.reflectionProgress >= this.maxReflection && !this.complete) {
+            this.complete = true;
+            this.game.audio.playComplete();
+            this.game.ui.setMessage("Sun sets on Arafah. Proceeding to Muzdalifah...");
+            setTimeout(() => {
+                this.game.changeStage(new StageBusCutscene(this.game, new StageMuzdalifah(this.game), "Traveling to Muzdalifah...", true));
+            }, 2000);
+        }
         // Move clouds
         for (let c of this.clouds) {
             c.x += 0.1;
@@ -629,14 +631,8 @@ class StageArafah extends Stage {
         }
 
         if (this.game.input.isDown('Space')) {
-            // Use 'pray' pose instead of manual rect
-            // We need to pass this state to the main loop or handle it here?
-            // The main loop calls drawPlayer. We can override it or set a flag on player.
-            this.game.player.pose = 'pray';
-            renderer.rect(this.game.player.x, this.game.player.y - 10, 16, 4, '#000');
+            // renderer.rect(this.game.player.x, this.game.player.y - 10, 16, 4, '#000');
             renderer.rect(this.game.player.x, this.game.player.y - 10, 16 * (this.reflectionProgress / this.maxReflection), 4, '#0f0');
-        } else {
-            this.game.player.pose = 'stand';
         }
         if (this.time > 0.5) {
             renderer.ctx.fillStyle = `rgba(255, 100, 0, ${(this.time - 0.5) * 0.5})`;
@@ -674,18 +670,21 @@ class StageMuzdalifah extends Stage {
     update() {
         if (this.phase === 'sleep') {
             if (this.game.input.isDown('Space')) {
+                this.game.player.pose = 'sleep';
                 this.sleepProgress += 0.5;
                 if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
                 this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
 
                 // Increment Z animation timer
                 this.zzzTime += 1;
+            } else {
+                this.game.player.pose = 'stand';
+            }
 
-                if (this.sleepProgress >= this.maxSleep) {
-                    this.phase = 'transition';
-                    this.game.player.pose = 'stand';
-                    this.game.ui.setMessage("Fajr approaches...");
-                }
+            if (this.sleepProgress >= this.maxSleep) {
+                this.phase = 'transition';
+                this.game.player.pose = 'stand';
+                this.game.ui.setMessage("Fajr approaches...");
             }
         } else if (this.phase === 'transition') {
             this.dawnAlpha += 0.01;
@@ -767,7 +766,6 @@ class StageMuzdalifah extends Stage {
         // Sleep Phase Visuals
         if (this.phase === 'sleep') {
             if (this.game.input.isDown('Space')) {
-                this.game.player.pose = 'sleep';
                 renderer.rect(this.game.player.x, this.game.player.y + 16, 16, 4, '#444'); // Mat
 
                 // Animated Zzz - appear one by one and drift up
@@ -1284,22 +1282,25 @@ class StageMinaReturn extends Stage {
         }
 
         if (nearTent && this.game.input.isDown('Space') && !this.complete) {
+            this.game.player.pose = 'sleep';
             this.sleepProgress += 0.5;
             if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
             this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
             this.zzzTime++;
+        } else {
+            this.game.player.pose = 'stand';
+        }
 
-            if (this.sleepProgress >= this.maxSleep) {
-                this.complete = true;
-                this.game.audio.playComplete();
-                this.game.ui.setMessage("You rested well. To Jamarat!");
-                setTimeout(() => {
-                    this.game.changeStage(new StageCutscene(this.game, [
-                        "A night of rest.",
-                        "Destination: Jamarat"
-                    ], new StageJamaratReturn(this.game, this.day)));
-                }, 2000);
-            }
+        if (this.sleepProgress >= this.maxSleep && !this.complete) {
+            this.complete = true;
+            this.game.audio.playComplete();
+            this.game.ui.setMessage("You rested well. To Jamarat!");
+            setTimeout(() => {
+                this.game.changeStage(new StageCutscene(this.game, [
+                    "A night of rest.",
+                    "Destination: Jamarat"
+                ], new StageJamaratReturn(this.game, this.day)));
+            }, 2000);
         }
     }
     draw(renderer) {
@@ -1314,7 +1315,6 @@ class StageMinaReturn extends Stage {
 
         // Draw player sleeping if space held
         if (this.game.input.isDown('Space')) {
-            this.game.player.pose = 'sleep';
             // Zzz animation
             renderer.ctx.fillStyle = '#fff';
             renderer.ctx.font = '8px "Press Start 2P"';

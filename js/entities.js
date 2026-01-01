@@ -21,9 +21,12 @@ class Player {
         this.speed = 1.5;
         this.isIhram = false;
         this.isHairCut = false;
+        this.pose = 'stand';
     }
 
     update(input, solids, mapW, mapH) {
+        if (this.pose === 'pray' || this.pose === 'sleep') return;
+
         let dx = 0;
         let dy = 0;
 
