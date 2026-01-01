@@ -19,7 +19,7 @@ class StageIntro extends Stage {
         this.showPlayer = false;
     }
     enter() {
-        this.game.ui.setMessage("Welcome. Press SPACE or Tap A (Action) to begin.");
+        this.game.ui.setMessage("Welcome. Press SPACE or A to begin.");
         this.game.ui.setHUD("");
     }
     update() {
@@ -52,7 +52,7 @@ class StageIntro extends Stage {
         // Prompt
         renderer.ctx.fillStyle = '#fff';
         renderer.ctx.font = '3.5px "Press Start 2P"';
-        renderer.ctx.fillText("[PRESS SPACE TO START]", LOGICAL_W / 2, 100);
+        renderer.ctx.fillText("[PRESS SPACE or A TO START]", LOGICAL_W / 2, 100);
 
         renderer.ctx.textAlign = 'left'; // Reset
     }
@@ -108,7 +108,7 @@ class StageCutscene extends Stage {
 
         renderer.ctx.font = '4px "Press Start 2P"';
         renderer.ctx.fillStyle = '#888';
-        renderer.ctx.fillText("[PRESS SPACE TO CONTINUE]", LOGICAL_W / 2, LOGICAL_H - 20);
+        renderer.ctx.fillText("[PRESS SPACE or A TO CONTINUE]", LOGICAL_W / 2, LOGICAL_H - 20);
 
         renderer.ctx.textAlign = 'left';
     }
@@ -262,7 +262,7 @@ class StageMeeqat extends Stage {
     enter() {
         this.game.player.x = 20;
         this.game.player.y = 60;
-        this.game.ui.setMessage("Stage 1: The Meeqat. Walk to the rug and press SPACE to make Niyyah.");
+        this.game.ui.setMessage("Stage 1: The Meeqat. Walk to the rug and press SPACE or A to make Niyyah.");
         this.game.ui.setHUD("");
     }
     update() {
@@ -444,7 +444,7 @@ class StageMina extends Stage {
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 10;
-        this.game.ui.setMessage("Stage 2: Mina (8th Dhul Hijjah). Find 5 tents with rugs and HOLD SPACE to Pray.");
+        this.game.ui.setMessage("Stage 2: Mina (8th Dhul Hijjah). Find 5 tents with rugs and HOLD SPACE or A to Pray.");
         this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
     }
     update() {
@@ -562,7 +562,7 @@ class StageArafah extends Stage {
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 250;
-        this.game.ui.setMessage("Stage 3: Arafah (9th Dhul Hijjah). Stand near Mount Mercy and hold SPACE to Reflect.");
+        this.game.ui.setMessage("Stage 3: Arafah (9th Dhul Hijjah). Stand near Mount Mercy and hold SPACE or A to Reflect.");
         this.game.ui.setHUD("Reflection: 0%");
     }
     update() {
@@ -646,7 +646,7 @@ class StageMuzdalifah extends Stage {
     enter() {
         this.game.player.x = 20;
         this.game.player.y = 100; // Start on ground
-        this.game.ui.setMessage("Stage 4: Muzdalifah. Rest under the stars. Hold SPACE to sleep.");
+        this.game.ui.setMessage("Stage 4: Muzdalifah. Rest under the stars. Hold SPACE or A to sleep.");
         this.game.ui.setHUD("Sleep: 0%");
     }
     update() {
@@ -670,7 +670,7 @@ class StageMuzdalifah extends Stage {
             if (this.dawnAlpha >= 1) {
                 this.phase = 'collect';
                 this.spawnPebbles();
-                this.game.ui.setMessage("Fajr has arrived. Collect 7 pebbles (SPACE).");
+                this.game.ui.setMessage("Fajr has arrived. Collect 7 pebbles (SPACE or A).");
                 this.game.ui.setHUD(`Pebbles: 0/${this.target}`);
             }
         } else if (this.phase === 'collect') {
@@ -832,7 +832,7 @@ class StageJamarat extends Stage {
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 250;
-        this.game.ui.setMessage("Stage 5: Jamarat al-Aqaba (10th Dhul Hijjah). Throw 7 stones at the LARGEST pillar (SPACE).");
+        this.game.ui.setMessage("Stage 5: Jamarat al-Aqaba (10th Dhul Hijjah). Throw 7 stones at the LARGEST pillar (SPACE or A).");
         this.game.ui.setHUD(`Thrown: 0/${this.target}`);
     }
     update() {
@@ -991,7 +991,7 @@ class StageSacrifice extends Stage {
             if (a.x > sz.x && a.x < sz.x + sz.w &&
                 a.y > sz.y && a.y < sz.y + sz.h) {
 
-                this.game.ui.setMessage("Press SPACE to perform sacrifice.");
+                this.game.ui.setMessage("Press SPACE or A to perform sacrifice.");
 
                 if (this.game.input.isJustPressed('Space')) {
                     // Perform Sacrifice
@@ -1243,7 +1243,7 @@ class StageMinaReturn extends Stage {
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 10;
-        this.game.ui.setMessage(`Night ${this.night}: Mina. Find a tent and hold SPACE to sleep.`);
+        this.game.ui.setMessage(`Night ${this.night}: Mina. Find a tent and hold SPACE or A to sleep.`);
         this.game.ui.setHUD("Sleep: 0%");
     }
     update() {

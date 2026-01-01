@@ -61,22 +61,24 @@ canvas {
 
 /* --- MOBILE CONTROLS --- */
 #mobile-controls {
-    position: absolute;
-    bottom: 90px; /* Above UI layer */
-    left: 0;
     width: 100%;
-    height: 150px;
-    pointer-events: none; /* Let clicks pass through empty areas */
-    display: none; /* Hidden by default (desktop) */
+    height: 120px;
+    background: #111;
+    border-top: 2px solid #444;
+    pointer-events: none;
+    /* Let clicks pass through empty areas */
+    display: none;
+    /* Hidden by default (desktop) */
     justify-content: space-between;
-    padding: 0 20px;
+    align-items: center;
+    padding: 10px 30px;
     box-sizing: border-box;
-    z-index: 20;
 }
 
 @media (hover: none) and (pointer: coarse) {
     #mobile-controls {
-        display: flex; /* Show on touch devices */
+        display: flex;
+        /* Show on touch devices */
     }
 }
 
@@ -96,8 +98,8 @@ canvas {
 .d-btn {
     width: 50px;
     height: 50px;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.7);
     border-radius: 50%;
     color: white;
     font-size: 20px;
@@ -105,10 +107,12 @@ canvas {
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 .d-btn:active {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.6);
+    border-color: #fff;
 }
 
 .action-grp {
@@ -120,8 +124,8 @@ canvas {
 .action-btn {
     width: 70px;
     height: 70px;
-    background: rgba(255, 0, 0, 0.3);
-    border: 3px solid rgba(255, 50, 50, 0.6);
+    background: rgba(255, 80, 80, 0.4);
+    border: 3px solid rgba(255, 100, 100, 0.8);
     border-radius: 50%;
     color: white;
     font-size: 24px;
@@ -129,8 +133,10 @@ canvas {
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 .action-btn:active {
-    background: rgba(255, 0, 0, 0.6);
+    background: rgba(255, 80, 80, 0.7);
+    border-color: #ff6666;
 }
