@@ -31,7 +31,7 @@ class StageIntro extends Stage {
         if (this.triggered) return;
         if (this.game.input.isJustPressed('Space')) {
             this.triggered = true;
-            this.game.audio.init();
+            this.game.audio.resumeContext();
             this.game.audio.playSelect();
             this.game.changeStage(new StageMeeqat(this.game));
         }

@@ -69,6 +69,11 @@ class AudioManager {
         this.tryWakeUp();
     }
 
+    // Alias for compatibility
+    init() {
+        this.resumeContext();
+    }
+
     tryWakeUp() {
         if (!this.ctx) return;
         try {
