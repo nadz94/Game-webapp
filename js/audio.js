@@ -154,8 +154,8 @@ class AudioManager {
     // Footstep - procedural noise
     playFootstep() {
         // "Mario-like" subtle tap: Low pass, short duration
-        // Increased volume and freq slightly to ensure audibility
-        this.playNoise(0.04, 0.3, 350);
+        // Reduced volume to 70% (0.3 * 0.7 = 0.21)
+        this.playNoise(0.04, 0.21, 350);
     }
 
     // Bus engine - loop mp3
