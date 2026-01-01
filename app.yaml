@@ -1,0 +1,24 @@
+runtime: python310
+
+handlers:
+  # Serve index.html at the root
+  - url: /
+    static_files: index.html
+    upload: index.html
+
+  # Serve static files from css directory
+  - url: /css
+    static_dir: css
+
+  # Serve static files from js directory
+  - url: /js
+    static_dir: js
+
+  # Serve static files from sounds directory
+  - url: /sounds
+    static_dir: sounds
+
+  # Serve image 1.png specifically if needed, or any other root level images
+  - url: /(.*\.(png|jpg|jpeg|gif|ico))$
+    static_files: \1
+    upload: .*\.(png|jpg|jpeg|gif|ico)$
