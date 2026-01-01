@@ -21,13 +21,16 @@ class StageIntro extends Stage {
     constructor(game) {
         super(game);
         this.showPlayer = false;
+        this.triggered = false;
     }
     enter() {
         this.game.ui.setMessage(`Welcome. ${this.getPrompt("Press SPACE", "Tap A")} to begin.`);
         this.game.ui.setHUD("");
     }
     update() {
+        if (this.triggered) return;
         if (this.game.input.isJustPressed('Space')) {
+            this.triggered = true;
             this.game.audio.init();
             this.game.audio.playSelect();
             this.game.changeStage(new StageMeeqat(this.game));
@@ -68,12 +71,17 @@ class StageCutscene extends Stage {
         this.lines = lines;
         this.nextStage = nextStage;
         this.showPlayer = false;
+        this.inputCooldown = 20; // Prevent accidental skips
     }
     enter() {
         this.game.ui.setMessage("");
         this.game.ui.setHUD("");
     }
     update() {
+        if (this.inputCooldown > 0) {
+            this.inputCooldown--;
+            return;
+        }
         if (this.game.input.isJustPressed('Space')) {
             this.game.changeStage(this.nextStage);
         }
@@ -127,7 +135,8 @@ class StageBusCutscene extends Stage {
         this.timer = 0;
         this.duration = 300; // ~5 seconds at 60fps
         this.scrollX = 0;
-        this.showPlayer = false; // Don't render the actual player sprite
+        this.showPlayer = false;
+        this.inputCooldown = 30; // 0.5s cooldown before skip allowed
     }
     enter() {
         // Reset player for camera safety (camera follows player)
@@ -142,7 +151,9 @@ class StageBusCutscene extends Stage {
         this.timer++;
         this.scrollX += 2;
 
-        if (this.timer >= this.duration || this.game.input.isJustPressed('Space')) {
+        if (this.inputCooldown > 0) this.inputCooldown--;
+
+        if (this.timer >= this.duration || (this.inputCooldown <= 0 && this.game.input.isJustPressed('Space'))) {
             this.game.changeStage(this.nextStage);
         }
     }
@@ -262,6 +273,7 @@ class StageMeeqat extends Stage {
     constructor(game) {
         super(game);
         this.rug = { x: 60, y: 60, w: 20, h: 30 };
+        this.triggered = false;
     }
     enter() {
         this.game.player.x = 20;
@@ -270,11 +282,15 @@ class StageMeeqat extends Stage {
         this.game.ui.setHUD("");
     }
     update() {
+        if (this.triggered) return;
+
         if (this.game.input.isJustPressed('Space')) {
             const p = this.game.player;
             const r = this.rug;
             if (p.x < r.x + r.w + 10 && p.x + p.w > r.x - 10 &&
                 p.y < r.y + r.h + 10 && p.y + p.h > r.y - 10) {
+
+                this.triggered = true;
                 this.game.player.isIhram = true;
                 this.game.audio.playStageComplete();
                 this.game.ui.setMessage("Labbayka Hajjan! (Here I am for Hajj)");
@@ -444,6 +460,7 @@ class StageMina extends Stage {
             if (!t.isTarget) { t.isTarget = true; targets++; }
         }
         this.solids = [];
+        this.completed = false;
     }
     enter() {
         this.game.player.x = 10;
@@ -462,7 +479,7 @@ class StageMina extends Stage {
 
                 onRug = true;
 
-                if (this.game.input.isDown('Space')) {
+                if (this.game.input.isDown('Space') && !this.completed) {
                     this.game.player.pose = 'pray';
                     this.prayerProgress += 1.0; // Adjust speed as needed
 
@@ -478,6 +495,7 @@ class StageMina extends Stage {
                         this.game.ui.setMessage("Prayer completed.");
 
                         if (this.prayers >= this.maxPrayers) {
+                            this.completed = true;
                             this.game.audio.playStageComplete();
                             this.game.ui.setMessage("All prayers done. Proceeding to Arafah...");
                             setTimeout(() => {
@@ -832,6 +850,7 @@ class StageJamarat extends Stage {
         this.signs = [
             new Sign(50, 250, "Largest ->")
         ];
+        this.completed = false;
     }
     enter() {
         this.game.player.x = 10;
@@ -860,7 +879,8 @@ class StageJamarat extends Stage {
                 this.stonesThrown++;
                 this.game.audio.playImpact();
                 this.game.ui.setHUD(`Thrown: ${this.stonesThrown}/${this.target}`);
-                if (this.stonesThrown >= this.target) {
+                if (this.stonesThrown >= this.target && !this.completed) {
+                    this.completed = true;
                     this.game.audio.playStageComplete();
                     this.game.ui.setMessage("Stoning complete. Proceed to Sacrifice.");
                     setTimeout(() => {
@@ -938,6 +958,7 @@ class StageSacrifice extends Stage {
             new Sign(200, 200, "Barber ^"),  // Middle - pointing up to barber
             new Sign(250, 200, "Slaughter >") // Right - pointing to sacrifice zone
         ];
+        this.completed = false;
 
         // Solids for pen walls (with door gap at bottom)
         this.solids = [
@@ -1398,7 +1419,8 @@ class StageJamaratReturn extends Stage {
         }
     }
     checkCompletion() {
-        if (this.pillars.every(p => p.done)) {
+        if (this.pillars.every(p => p.done) && !this.completed) {
+            this.completed = true;
             if (this.day === 12) {
                 this.game.ui.setMessage("Day 12 Complete. Return to Mina for Night 12.");
                 setTimeout(() => {
@@ -1474,7 +1496,8 @@ class StageFarewell extends Stage {
                 this.currentCheckpoint = 0;
                 this.laps++;
                 this.game.ui.setHUD(`Farewell: ${this.laps}/${this.maxLaps}`);
-                if (this.laps >= this.maxLaps) {
+                if (this.laps >= this.maxLaps && !this.completed) {
+                    this.completed = true;
                     this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");
                     this.game.audio.playCelebration();
                     // Initialize confetti
