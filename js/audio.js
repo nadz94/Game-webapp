@@ -79,17 +79,17 @@ class AudioManager {
         // Also "touch" HTML Audio instances to unlock them for later use
         // We set volume to 0 and mute them temporarily so they aren't audible
         const touchAudio = (s) => {
-            const oldVol = s.volume;
+            const oldVol = s.volume || 0.5; // Default if 0
             s.volume = 0;
             s.muted = true;
             s.play().then(() => {
                 s.pause();
                 s.currentTime = 0;
+                s.volume = oldVol; // Restore volume before unmuting
                 s.muted = false;
-                s.volume = oldVol;
             }).catch(() => {
-                s.muted = false;
                 s.volume = oldVol;
+                s.muted = false;
             });
         };
 
