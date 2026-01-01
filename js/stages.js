@@ -1094,10 +1094,6 @@ class StageSacrifice extends Stage {
         renderer.drawStall(this.barber.x, this.barber.y, 'scissors');
         renderer.drawBarber(this.barberNPC.x, this.barberNPC.y);
 
-        if (this.hairCutDone) {
-            renderer.rect(this.barber.x + 15, this.barber.y + 35, 10, 4, '#0f0');
-        }
-
         // Draw Signs
         for (let s of this.signs) {
             s.draw(renderer);
