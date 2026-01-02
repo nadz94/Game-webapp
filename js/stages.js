@@ -630,9 +630,10 @@ class StageArafah extends Stage {
             s.draw(renderer);
         }
 
-        if (this.game.input.isDown('Space')) {
-            // renderer.rect(this.game.player.x, this.game.player.y - 10, 16, 4, '#000');
-            renderer.rect(this.game.player.x, this.game.player.y - 10, 16 * (this.reflectionProgress / this.maxReflection), 4, '#0f0');
+        if (this.game.player.pose === 'pray' && this.reflectionProgress > 0) {
+            const p = this.game.player;
+            renderer.rect(p.x, p.y - 10, 16, 4, '#000');
+            renderer.rect(p.x, p.y - 10, 16 * (this.reflectionProgress / this.maxReflection), 4, '#0f0');
         }
         if (this.time > 0.5) {
             renderer.ctx.fillStyle = `rgba(255, 100, 0, ${(this.time - 0.5) * 0.5})`;
