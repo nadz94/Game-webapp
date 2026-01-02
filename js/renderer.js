@@ -14,6 +14,39 @@ class Renderer {
         this.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     }
 
+    drawMarbleFloor(mapW, mapH) {
+        // Base color
+        this.rect(0, 0, mapW, mapH, COLORS.MARBLE);
+
+        // Tile patterns
+        const tileSize = 32;
+        const camX = this.camera.x;
+        const camY = this.camera.y;
+
+        for (let y = 0; y < mapH; y += tileSize) {
+            for (let x = 0; x < mapW; x += tileSize) {
+                // Main tile lines
+                this.ctx.strokeStyle = '#e0e0e0';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(
+                    Math.floor(x - camX),
+                    Math.floor(y - camY),
+                    tileSize,
+                    tileSize
+                );
+
+                // Subtle inner border for premium look
+                this.ctx.strokeStyle = '#f5f5f5';
+                this.ctx.strokeRect(
+                    Math.floor(x + 2 - camX),
+                    Math.floor(y + 2 - camY),
+                    tileSize - 4,
+                    tileSize - 4
+                );
+            }
+        }
+    }
+
     rect(x, y, w, h, color) {
         this.ctx.fillStyle = color;
         this.ctx.fillRect(Math.floor(x - this.camera.x), Math.floor(y - this.camera.y), w, h);

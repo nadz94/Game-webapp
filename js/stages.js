@@ -803,12 +803,6 @@ class StageMuzdalifah extends Stage {
                 if (peb.active) renderer.rect(peb.x, peb.y, peb.w, peb.h, COLORS.PEBBLE);
             }
         }
-
-        // Transition Overlay
-        if (this.phase === 'transition') {
-            renderer.ctx.fillStyle = `rgba(32, 32, 80, ${this.dawnAlpha})`; // Fade to dawn color
-            renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-        }
     }
 }
 
@@ -979,7 +973,7 @@ class StageSacrifice extends Stage {
     enter() {
         this.game.player.x = 200; // Center below signboards
         this.game.player.y = 230; // Below the signboards
-        this.game.ui.setMessage(`Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone. ${this.getPrompt("Press SPACE", "Tap A")}.`);
+        this.game.ui.setMessage(`Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone. ${this.getPrompt("Press SPACE", "Tap A")} to interact.`);
         this.game.ui.setHUD("Sacrifice: Pending");
     }
 
@@ -1021,7 +1015,7 @@ class StageSacrifice extends Stage {
             if (a.x > sz.x && a.x < sz.x + sz.w &&
                 a.y > sz.y && a.y < sz.y + sz.h) {
 
-                this.game.ui.setMessage(`${this.getPrompt("Press SPACE", "Tap A")} to perform sacrifice.`);
+                this.game.ui.setMessage(`${this.getPrompt("Press SPACE", "Tap A")} to perform the sacrifice.`);
 
                 if (this.game.input.isJustPressed('Space')) {
                     // Perform Sacrifice
@@ -1054,7 +1048,7 @@ class StageSacrifice extends Stage {
                         this.game.ui.setMessage("Hair trimmed (Halq).You can now take off your Ihram and proceed to the Grand Mosque.");
                         setTimeout(() => {
                             this.game.changeStage(new StageBusCutscene(this.game, new StageGrandMosque(this.game), "Traveling to Grand Mosque..."));
-                        }, 2000);
+                        }, 2500);
                     };
                 }
             }
@@ -1114,7 +1108,8 @@ class StageGrandMosque extends Stage {
         this.mapW = 400;
         this.mapH = 400;
         this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
-        this.solids = [this.kaaba];
+        this.hateem = { x: 168 + 64, y: 168 + 4, w: 32, h: 56 };
+        this.solids = [this.kaaba, this.hateem];
 
         // Tawaf Checkpoints (Anti-Clockwise starting from Black Stone/Bottom-Left)
         // Target sequence: Bottom Right -> Top Right -> Top Left -> Bottom Left (Lap Complete)
@@ -1209,7 +1204,7 @@ class StageGrandMosque extends Stage {
     }
 
     draw(renderer) {
-        renderer.clear(COLORS.MARBLE);
+        renderer.drawMarbleFloor(this.mapW, this.mapH);
         renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
 
         if (this.mode === 'sai') {
@@ -1327,8 +1322,6 @@ class StageMinaReturn extends Stage {
             if (cycle >= 0) renderer.ctx.fillText('Z', this.game.player.x + 4, this.game.player.y - 19 - drift);
             if (cycle >= 1) renderer.ctx.fillText('z', this.game.player.x + 10, this.game.player.y - 21 - drift);
             if (cycle >= 2) renderer.ctx.fillText('z', this.game.player.x + 16, this.game.player.y - 23 - drift);
-        } else {
-            this.game.player.pose = 'stand';
         }
     }
 }
@@ -1363,7 +1356,6 @@ class StageJamaratReturn extends Stage {
         this.game.player.x = 10;
         this.game.player.y = 250;
         this.game.ui.setMessage(`Day ${this.day}: Jamarat. Stone ALL 3 pillars (7 each).`);
-        this.game.ui.setHUD("S:0 M:0 L:0");
         this.updateHUD();
     }
     updateHUD() {
@@ -1471,7 +1463,8 @@ class StageFarewell extends Stage {
         this.mapW = 400;
         this.mapH = 400;
         this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
-        this.solids = [this.kaaba];
+        this.hateem = { x: 168 + 64, y: 168 + 4, w: 32, h: 56 };
+        this.solids = [this.kaaba, this.hateem];
         this.checkpoints = [
             { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
             { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
@@ -1504,7 +1497,6 @@ class StageFarewell extends Stage {
                     this.completed = true;
                     this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");
                     this.game.audio.playCelebration();
-                    // Initialize confetti
                     if (this.confetti.length === 0) {
                         for (let i = 0; i < 50; i++) {
                             this.confetti.push({
@@ -1519,16 +1511,12 @@ class StageFarewell extends Stage {
                 }
             }
         }
-
-        // Update confetti
         if (this.laps >= this.maxLaps) {
             this.completionTime++;
             for (let c of this.confetti) {
                 c.x += c.vx;
                 c.y += c.vy;
-                c.vy += 0.1; // Gravity
-
-                // Reset if off screen
+                c.vy += 0.1;
                 if (c.y > this.mapH) {
                     c.y = -10;
                     c.x = Math.random() * this.mapW;
@@ -1537,19 +1525,14 @@ class StageFarewell extends Stage {
         }
     }
     draw(renderer) {
-        renderer.clear(COLORS.MARBLE);
+        renderer.drawMarbleFloor(this.mapW, this.mapH);
         renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
         if (this.laps >= this.maxLaps) {
-            // Draw confetti
             for (let c of this.confetti) {
                 renderer.rect(c.x, c.y, 3, 3, c.color);
             }
-
-            // Semi-transparent overlay (but don't make it too dark)
             renderer.ctx.fillStyle = 'rgba(0,0,0,0.5)';
             renderer.ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-
-            // Draw centered text at top
             renderer.ctx.fillStyle = '#ffd700';
             renderer.ctx.font = '10px "Press Start 2P"';
             const text = "HAJJ MUBARAK";
