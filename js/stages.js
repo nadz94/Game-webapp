@@ -231,22 +231,28 @@ class StageBusCutscene extends Stage {
         renderer.rect(bx + 40, by + 3, 12, 12, '#446688');
         renderer.rect(bx + 56, by + 3, 12, 12, '#446688'); // Driver
 
-        // Pilgrim heads and torsos in windows (all in Ihram)
+        // Pilgrim heads and torsos in windows
+        const showHats = !this.game.player.isIhram;
+
         // Window 1
-        renderer.rect(bx + 12, by + 10, 4, 4, '#fff'); // White Ihram torso
-        renderer.rect(bx + 12, by + 6, 4, 4, COLORS.SKIN); // Head (no cap)
+        renderer.rect(bx + 12, by + 10, 4, 4, '#fff'); // Torso
+        renderer.rect(bx + 12, by + 6, 4, 4, COLORS.SKIN); // Head
+        if (showHats) renderer.rect(bx + 12, by + 5, 4, 2, '#fff'); // Hat
 
         // Window 2
-        renderer.rect(bx + 28, by + 10, 4, 4, '#fff'); // White Ihram torso
-        renderer.rect(bx + 28, by + 6, 4, 4, COLORS.SKIN); // Head (no cap)
+        renderer.rect(bx + 28, by + 10, 4, 4, '#fff'); // Torso
+        renderer.rect(bx + 28, by + 6, 4, 4, COLORS.SKIN); // Head
+        if (showHats) renderer.rect(bx + 28, by + 5, 4, 2, '#fff'); // Hat
 
-        // Window 3 - Player in white Ihram
-        renderer.rect(bx + 44, by + 10, 4, 4, '#fff'); // White Ihram torso
-        renderer.rect(bx + 44, by + 6, 4, 4, COLORS.SKIN); // Head (no cap)
+        // Window 3 - Player
+        renderer.rect(bx + 44, by + 10, 4, 4, '#fff'); // Torso
+        renderer.rect(bx + 44, by + 6, 4, 4, COLORS.SKIN); // Head
+        if (showHats) renderer.rect(bx + 44, by + 5, 4, 2, '#fff'); // Hat
 
         // Window 4 - Driver
-        renderer.rect(bx + 60, by + 10, 4, 4, '#fff'); // White Ihram torso
-        renderer.rect(bx + 60, by + 6, 4, 4, COLORS.SKIN); // Head (no cap)
+        renderer.rect(bx + 60, by + 10, 4, 4, '#fff'); // Torso
+        renderer.rect(bx + 60, by + 6, 4, 4, COLORS.SKIN); // Head
+        if (showHats) renderer.rect(bx + 60, by + 5, 4, 2, '#fff'); // Hat
 
         // Wheels
         const wheelAnim = (Math.floor(this.timer / 5) % 2 === 0) ? 0 : 1;
@@ -973,7 +979,7 @@ class StageSacrifice extends Stage {
     enter() {
         this.game.player.x = 200; // Center below signboards
         this.game.player.y = 230; // Below the signboards
-        this.game.ui.setMessage("Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone.");
+        this.game.ui.setMessage(`Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone. ${this.getPrompt("Press SPACE", "Tap A")}.`);
         this.game.ui.setHUD("Sacrifice: Pending");
     }
 
@@ -1045,7 +1051,7 @@ class StageSacrifice extends Stage {
                         this.hairCutDone = true;
                         this.isTrimming = false;
                         this.game.player.isHairCut = true;
-                        this.game.ui.setMessage("Hair trimmed (Halq). Proceed to the Grand Mosque.");
+                        this.game.ui.setMessage("Hair trimmed (Halq).You can now take off your Ihram and proceed to the Grand Mosque.");
                         setTimeout(() => {
                             this.game.changeStage(new StageBusCutscene(this.game, new StageGrandMosque(this.game), "Traveling to Grand Mosque..."));
                         }, 2000);
@@ -1142,6 +1148,7 @@ class StageGrandMosque extends Stage {
     enter() {
         this.game.player.x = 140; // Start near Black Stone (Bottom Left)
         this.game.player.y = 240;
+        this.game.player.isIhram = false; // Transition to Thobe and Hat
         this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps Anti-Clockwise).");
         this.game.ui.setHUD(`Tawaf: 0/${this.maxLaps}`);
     }

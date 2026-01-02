@@ -26,13 +26,19 @@ class Renderer {
         if (pose === 'sleep') {
             // Sleeping Pose (Lying down)
             // Body (Horizontal)
-            if (isIhram) {
-                this.rect(dx, dy + 8, 14, 6, COLORS.WHITE);
+            if (isIhram || isHairCut) {
+                this.rect(dx, dy + 8, 14, 6, COLORS.WHITE); // Ihram or Thobe
             } else {
                 this.rect(dx, dy + 8, 14, 6, COLORS.SHIRT);
             }
             // Head
             this.rect(dx - 4, dy + 6, 6, 6, COLORS.SKIN);
+
+            // Hat when sleeping
+            if (isHairCut && !isIhram) {
+                this.rect(dx - 5, dy + 6, 2, 6, COLORS.WHITE); // Kufi on side
+            }
+
             // Closed Eyes (Eyelids)
             this.rect(dx - 2, dy + 8, 2, 1, COLORS.SKIN);
             return;
@@ -58,6 +64,11 @@ class Renderer {
             this.rect(dx + 3, dy + 8, 2, 1, COLORS.IHRAM_SHADOW);
             this.rect(dx + 11, dy + 10, 2, 1, COLORS.IHRAM_SHADOW);
             this.rect(dx + 4, dy + 12, 8, 1, COLORS.IHRAM_SHADOW);
+        } else if (isHairCut) {
+            // Thobe (Full white robe)
+            this.rect(dx + 3, dy + 6, 10, 9, COLORS.WHITE);
+            // Detail (Vertical line for collar area)
+            this.rect(dx + 7, dy + 6, 2, 4, COLORS.IHRAM_SHADOW);
         } else {
             // Normal clothes (Shirt + Pants)
             this.rect(dx + 3, dy + 6, 10, 6, COLORS.SHIRT);
@@ -65,15 +76,17 @@ class Renderer {
         }
 
         // --- ARMS ---
+        const sleeveColor = (isIhram) ? null : (isHairCut ? COLORS.WHITE : COLORS.SHIRT);
+
         if (pose === 'pray') {
             // Arms raised
             this.rect(dx + 0, dy + 2, 3, 6, COLORS.SKIN); // Left arm up
             this.rect(dx + 13, dy + 2, 3, 6, COLORS.SKIN); // Right arm up
 
             // Full sleeves when not in Ihram (raised)
-            if (!isIhram) {
-                this.rect(dx + 0, dy + 2, 3, 6, COLORS.SHIRT); // Left sleeve
-                this.rect(dx + 13, dy + 2, 3, 6, COLORS.SHIRT); // Right sleeve
+            if (sleeveColor) {
+                this.rect(dx + 0, dy + 2, 3, 6, sleeveColor); // Left sleeve
+                this.rect(dx + 13, dy + 2, 3, 6, sleeveColor); // Right sleeve
                 // Show hands
                 this.rect(dx + 0, dy + 6, 3, 2, COLORS.SKIN); // Left hand
                 this.rect(dx + 13, dy + 6, 3, 2, COLORS.SKIN); // Right hand
@@ -84,9 +97,9 @@ class Renderer {
             this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN); // Right arm
 
             // Full sleeves when not in Ihram (down)
-            if (!isIhram) {
-                this.rect(dx + 1, dy + 6, 3, 6, COLORS.SHIRT); // Left sleeve
-                this.rect(dx + 12, dy + 6, 3, 6, COLORS.SHIRT); // Right sleeve
+            if (sleeveColor) {
+                this.rect(dx + 1, dy + 6, 3, 6, sleeveColor); // Left sleeve
+                this.rect(dx + 12, dy + 6, 3, 6, sleeveColor); // Right sleeve
                 // Show hands
                 this.rect(dx + 1, dy + 10, 3, 2, COLORS.SKIN); // Left hand
                 this.rect(dx + 12, dy + 10, 3, 2, COLORS.SKIN); // Right hand
@@ -97,8 +110,16 @@ class Renderer {
         // Face base
         this.rect(dx + 4, dy, 8, 7, COLORS.SKIN);
 
-        // Hair
-        if (!isHairCut) {
+        // Hair or Hat
+        if (isHairCut) {
+            if (!isIhram) {
+                // White Kufi/Hat
+                this.rect(dx + 4, dy - 1, 8, 3, COLORS.WHITE);
+                // Shadow under hat
+                this.rect(dx + 4, dy + 1, 8, 1, COLORS.IHRAM_SHADOW);
+            }
+            // If in Ihram, we stay bald (drawn via face base)
+        } else {
             this.rect(dx + 4, dy, 8, 2, COLORS.HAIR); // Top hair
             this.rect(dx + 3, dy + 1, 1, 3, COLORS.HAIR); // Sideburn L
             this.rect(dx + 12, dy + 1, 1, 3, COLORS.HAIR); // Sideburn R
