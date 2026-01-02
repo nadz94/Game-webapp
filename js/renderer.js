@@ -262,23 +262,55 @@ class Renderer {
     }
 
     drawKaaba(x, y) {
-        // Base
-        this.rect(x, y, 64, 64, COLORS.KAABA_BLACK);
-        // Gold stripe
-        this.rect(x, y + 10, 64, 8, COLORS.KAABA_GOLD);
-        // Door area
-        this.rect(x + 40, y + 30, 12, 20, '#332200');
+        // --- HATEEM (Hijr Ismail) ---
+        // Semi-circular wall to the right of the Kaaba
+        const hx = Math.floor(x + 64 - this.camera.x);
+        const hy = Math.floor(y + 32 - this.camera.y);
+        this.ctx.strokeStyle = '#dddddd';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        // A semi-circle arching to the right
+        this.ctx.arc(hx + 5, hy, 28, -Math.PI / 2, Math.PI / 2);
+        this.ctx.stroke();
 
-        // Black Stone (Hajar al-Aswad) - Bottom Left Corner
+        // --- KAABA BASE ---
+        this.rect(x, y, 64, 64, COLORS.KAABA_BLACK);
+
+        // Gold stripe (Kiswa)
+        this.rect(x, y + 10, 64, 8, COLORS.KAABA_GOLD);
+        // Detail on gold stripe
+        this.rect(x, y + 12, 64, 1, 'rgba(0,0,0,0.2)');
+        this.rect(x, y + 15, 64, 1, 'rgba(0,0,0,0.2)');
+
+        // --- DOOR AREA ---
+        // Aligned more to the left
+        const doorX = x + 12;
+        const doorY = y + 25;
+        this.rect(doorX, doorY, 14, 25, '#3e2723'); // Dark wood door
+
+        // Gold door outline
+        this.rect(doorX, doorY, 14, 2, COLORS.KAABA_GOLD); // Top
+        this.rect(doorX, doorY, 2, 25, COLORS.KAABA_GOLD); // Left
+        this.rect(doorX + 12, doorY, 2, 25, COLORS.KAABA_GOLD); // Right
+
+        // Door steps (Grey)
+        this.rect(doorX - 2, y + 50, 18, 5, '#888888'); // Top step
+        this.rect(doorX - 4, y + 55, 22, 5, '#aaaaaa'); // Middle step
+        this.rect(doorX - 6, y + 60, 26, 4, '#cccccc'); // Bottom step
+
+        // --- BLACK STONE (Hajar al-Aswad) ---
+        // Bottom Left Corner
+        const bsX = Math.floor(x - this.camera.x);
+        const bsY = Math.floor(y + 64 - this.camera.y - 5);
         // Silver Casing
         this.ctx.fillStyle = '#c0c0c0';
         this.ctx.beginPath();
-        this.ctx.arc(Math.floor(x - this.camera.x), Math.floor(y + 64 - this.camera.y - 5), 6, 0, Math.PI * 2);
+        this.ctx.arc(bsX, bsY, 6, 0, Math.PI * 2);
         this.ctx.fill();
         // Stone
         this.ctx.fillStyle = '#000';
         this.ctx.beginPath();
-        this.ctx.arc(Math.floor(x - this.camera.x), Math.floor(y + 64 - this.camera.y - 5), 3, 0, Math.PI * 2);
+        this.ctx.arc(bsX, bsY, 3, 0, Math.PI * 2);
         this.ctx.fill();
     }
 
