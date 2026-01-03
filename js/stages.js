@@ -426,11 +426,11 @@ class StageMina extends Stage {
         this.npc = {
             x: 200, y: 200, w: 16, h: 16,
             messages: [
-                "'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
-                "'Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
-                "'Patience and kindness are your best companions on this journey.'",
-                "'In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
-                "'Take this time to reflect and prepare your heart for the Day of Arafah.'"
+                "'Pilgrim: Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
+                "'Pilgrim: Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
+                "'Pilgrim: Patience and kindness are your best companions on this journey.'",
+                "'Pilgrim: In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
+                "'Pilgrim: Take this time to reflect and prepare your heart for the Day of Arafah.'"
             ],
             msgIndex: 0
         };
@@ -626,10 +626,10 @@ class StageArafah extends Stage {
         this.npc = {
             x: 230, y: 220, w: 16, h: 16,
             messages: [
-                "'Today is the Day of Arafah, the most important day of Hajj. The Prophet (pbuh) said, \"Hajj is Arafah.\"'",
-                "'Spend your time in sincere Dua and reflection. This is the time for forgiveness.'",
-                "'Remember to recite the Takbir Tashreeq: \"Allahu Akbar, Allahu Akbar, La ilaha illallah, Allahu Akbar, Allahu Akbar, wa lillahil Hamd\" after each prayer.'",
-                "'Stay focused until sunset. We will leave for Muzdalifah once the sun goes down.'"
+                "'Pilgrim: Today is the Day of Arafah, the most important day of Hajj. The Prophet (pbuh) said, \"Hajj is Arafah.\"'",
+                "'Pilgrim: Spend your time in sincere Dua and reflection. This is the time for forgiveness.'",
+                "'Pilgrim: Remember to recite the Takbir Tashreeq: \"Allahu Akbar, Allahu Akbar, La ilaha illallah, Allahu Akbar, Allahu Akbar, wa lillahil Hamd\" after each prayer.'",
+                "'Pilgrim: Stay focused until sunset. We will leave for Muzdalifah once the sun goes down.'"
             ],
             msgIndex: 0
         };
@@ -1153,12 +1153,16 @@ class StageSacrifice extends Stage {
         }
 
         // 3. Barber Interaction
-        if (this.sacrificeDone && !this.hairCutDone && !this.isTrimming) {
-            const b = this.barber;
-            if (p.x < b.x + b.w + 10 && p.x + p.w > b.x - 10 &&
-                p.y < b.y + b.h + 10 && p.y + p.h > b.y - 10) {
-                if (this.game.input.isJustPressed('Space')) {
+        const b = this.barber;
+        if (p.x < b.x + b.w + 10 && p.x + p.w > b.x - 10 &&
+            p.y < b.y + b.h + 10 && p.y + p.h > b.y - 10) {
+            if (this.game.input.isJustPressed('Space')) {
+                if (!this.sacrificeDone) {
+                    this.game.ui.setMessage("Barber: 'You must perform the sacrifice first before I can trim your hair.'");
+                    this.game.audio.playSelect();
+                } else if (!this.hairCutDone && !this.isTrimming) {
                     this.isTrimming = true;
+                    this.game.player.pose = 'interact';
                     this.game.ui.setMessage("Trimming...");
                     const sound = this.game.audio.playTrim();
 
@@ -1166,8 +1170,9 @@ class StageSacrifice extends Stage {
                     sound.onended = () => {
                         this.hairCutDone = true;
                         this.isTrimming = false;
+                        this.game.player.pose = 'stand';
                         this.game.player.isHairCut = true;
-                        this.game.ui.setMessage("Hair trimmed (Halq).You can now take off your Ihram and proceed to the Grand Mosque.");
+                        this.game.ui.setMessage("Hair trimmed (Halq). You can now take off your Ihram and proceed to the Grand Mosque.");
                         setTimeout(() => {
                             this.game.changeStage(new StageBusCutscene(this.game, new StageGrandMosque(this.game), "Traveling to Grand Mosque..."));
                         }, 2500);
