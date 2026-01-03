@@ -20,9 +20,21 @@ class Game {
         this.ui = {
             setMessage: (msg) => {
                 document.getElementById('message-box').innerText = msg;
+                document.getElementById('next-arrow').classList.add('hidden');
+                document.getElementById('ui-layer').classList.remove('hidden');
             },
             setHUD: (msg) => {
                 document.getElementById('hud').innerText = msg;
+            },
+            showNextArrow: (visible) => {
+                const arr = document.getElementById('next-arrow');
+                if (visible) arr.classList.remove('hidden');
+                else arr.classList.add('hidden');
+            },
+            showBox: (visible) => {
+                const layer = document.getElementById('ui-layer');
+                if (visible) layer.classList.remove('hidden');
+                else layer.classList.add('hidden');
             }
         };
 

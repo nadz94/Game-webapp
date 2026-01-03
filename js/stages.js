@@ -25,6 +25,7 @@ class StageIntro extends Stage {
     }
     enter() {
         this.game.ui.setMessage(`Welcome. ${this.getPrompt("Press SPACE", "Tap A")} to begin.`);
+        this.game.ui.showBox(false);
         this.game.ui.setHUD("");
     }
     update() {
@@ -75,6 +76,7 @@ class StageCutscene extends Stage {
     }
     enter() {
         this.game.ui.setMessage("");
+        this.game.ui.showBox(false);
         this.game.ui.setHUD("");
     }
     update() {
@@ -398,66 +400,55 @@ class StageMina extends Stage {
         this.prayerProgress = 0;
         this.maxPrayerProgress = 100;
 
-        // Road definitions for collision checking
-        // Horizontal roads: y=100-120, y=300-320
-        // Vertical roads: x=100-120, x=300-320
+        // Road definitions
         const roads = [
-            { x: 0, y: 100, w: 400, h: 20 },   // Horizontal top
-            { x: 0, y: 300, w: 400, h: 20 },   // Horizontal bottom
-            { x: 100, y: 0, w: 20, h: 400 },   // Vertical left
-            { x: 300, y: 0, w: 20, h: 400 }    // Vertical right
+            { x: 0, y: 100, w: 400, h: 20 },
+            { x: 0, y: 300, w: 400, h: 20 },
+            { x: 100, y: 0, w: 20, h: 400 },
+            { x: 300, y: 0, w: 20, h: 400 }
         ];
 
-        // Helper function to check if tent overlaps with any road
         const overlapsRoad = (tent) => {
-            // Add padding for tent ropes/pegs (extends ~10px outside tent bounds)
             const padding = 10;
-            const tentLeft = tent.x - padding;
-            const tentRight = tent.x + tent.w + padding;
-            const tentTop = tent.y - padding;
-            const tentBottom = tent.y + tent.h + 30; // Tent height + rug space below
-
-            for (let road of roads) {
-                if (tentLeft < road.x + road.w &&
-                    tentRight > road.x &&
-                    tentTop < road.y + road.h &&
-                    tentBottom > road.y) {
-                    return true;
-                }
+            const tL = tent.x - padding;
+            const tR = tent.x + tent.w + padding;
+            const tT = tent.y - padding;
+            const tB = tent.y + tent.h + 30;
+            for (let r of roads) {
+                if (tL < r.x + r.w && tR > r.x && tT < r.y + r.h && tB > r.y) return true;
             }
             return false;
         };
 
-        // Generate non-overlapping tents (avoiding roads)
+        this.completed = false;
+        this.mainMessage = `Stage 2: Mina (8th Dhul Hijjah). Find 5 tents with rugs and ${this.getPrompt("HOLD SPACE", "HOLD A")} to Pray.`;
+
+        this.npc = {
+            x: 200, y: 200, w: 16, h: 16,
+            messages: [
+                "'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
+                "'Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
+                "'Patience and kindness are your best companions on this journey.'",
+                "'In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
+                "'Take this time to reflect and prepare your heart for the Day of Arafah.'"
+            ],
+            msgIndex: 0
+        };
+        this.npcMessageActive = false;
+        this.npcDialogueChunks = [];
+        this.npcChunkIndex = 0;
+
+        // Generate tents
         let attempts = 0;
         while (this.tents.length < 20 && attempts < 1000) {
-            let t = {
-                x: Math.random() * (this.mapW - 60) + 10, // Padding
-                y: Math.random() * (this.mapH - 60) + 10,
-                w: 32, h: 32,
-                isTarget: false,
-                visited: false
-            };
-
-            // Check if tent overlaps with roads
-            if (overlapsRoad(t)) {
-                attempts++;
-                continue;
-            }
-
+            let t = { x: Math.random() * 340 + 10, y: Math.random() * 340 + 10, w: 32, h: 32, isTarget: false, visited: false };
+            if (overlapsRoad(t)) { attempts++; continue; }
+            if (t.x < this.npc.x + 36 && t.x + 32 + 20 > this.npc.x && t.y < this.npc.y + 36 && t.y + 32 + 40 > this.npc.y) { attempts++; continue; }
             let overlap = false;
-            for (let other of this.tents) {
-                // Check distance or bounding box with padding
-                if (t.x < other.x + other.w + 10 && t.x + t.w + 10 > other.x &&
-                    t.y < other.y + other.h + 10 && t.y + t.h + 10 > other.y) {
-                    overlap = true;
-                    break;
-                }
+            for (let o of this.tents) {
+                if (t.x < o.x + o.w + 10 && t.x + t.w + 10 > o.x && t.y < o.y + o.h + 10 && t.y + t.h + 10 > o.y) { overlap = true; break; }
             }
-
-            if (!overlap) {
-                this.tents.push(t);
-            }
+            if (!overlap) this.tents.push(t);
             attempts++;
         }
         let targets = 0;
@@ -466,14 +457,32 @@ class StageMina extends Stage {
             if (!t.isTarget) { t.isTarget = true; targets++; }
         }
         this.solids = [];
-        this.completed = false;
     }
+
+    splitMessage(msg, limit = 80) {
+        if (msg.length <= limit) return [msg];
+        const chunks = [];
+        let words = msg.split(' ');
+        let current = "";
+        for (let word of words) {
+            if ((current + " " + word).length > limit) {
+                chunks.push(current.trim());
+                current = word;
+            } else {
+                current += (current === "" ? "" : " ") + word;
+            }
+        }
+        if (current) chunks.push(current.trim());
+        return chunks;
+    }
+
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 10;
-        this.game.ui.setMessage(`Stage 2: Mina (8th Dhul Hijjah). Find 5 tents with rugs and ${this.getPrompt("HOLD SPACE", "HOLD A")} to Pray.`);
+        this.game.ui.setMessage(this.mainMessage);
         this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
     }
+
     update() {
         const p = this.game.player;
         let onRug = false;
@@ -482,16 +491,11 @@ class StageMina extends Stage {
             if (t.isTarget && !t.visited &&
                 p.x < t.x + t.w && p.x + p.w > t.x &&
                 p.y < t.y + t.h && p.y + p.h > t.y) {
-
                 onRug = true;
-
-                if (this.game.input.isDown('Space') && !this.completed) {
+                if (this.game.input.isDown('Space') && !this.completed && !this.npcMessageActive) {
                     this.game.player.pose = 'pray';
-                    this.prayerProgress += 1.0; // Adjust speed as needed
-
-                    // Visual feedback in HUD
+                    this.prayerProgress += 1.0;
                     this.game.ui.setHUD(`Praying: ${Math.floor(this.prayerProgress)}%`);
-
                     if (this.prayerProgress >= this.maxPrayerProgress) {
                         t.visited = true;
                         this.prayers++;
@@ -499,7 +503,6 @@ class StageMina extends Stage {
                         this.game.audio.playComplete();
                         this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
                         this.game.ui.setMessage("Prayer completed.");
-
                         if (this.prayers >= this.maxPrayers) {
                             this.completed = true;
                             this.game.audio.playStageComplete();
@@ -509,60 +512,89 @@ class StageMina extends Stage {
                             }, 2000);
                         }
                     }
-                } else {
-                    // Reset progress if key released? Or keep it? 
-                    // Let's reset for "Hold to pray" feel, or maybe decay?
-                    // Resetting is simpler and encourages commitment.
+                } else if (!this.npcMessageActive) {
                     this.prayerProgress = 0;
                     this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
                 }
-                break; // Only interact with one at a time
+                break;
             }
         }
 
-        if (!onRug) {
-            this.prayerProgress = 0;
-            if (this.game.player.pose === 'pray') {
+        const n = this.npc;
+        const dx = p.x - n.x;
+        const dy = p.y - n.y;
+        const distSq = dx * dx + dy * dy;
+        const range = 25;
+
+        if (distSq < range * range && !onRug) {
+            if (!this.npcMessageActive) {
+                this.game.ui.setMessage(`Talk to Pilgrim (${this.getPrompt("SPACE", "A")})`);
+                if (this.game.input.isJustPressed('Space')) {
+                    this.npcMessageActive = true;
+                    this.game.player.pose = 'interact';
+                    this.npcDialogueChunks = this.splitMessage(n.messages[n.msgIndex]);
+                    this.npcChunkIndex = 0;
+                    this.game.ui.setMessage(this.npcDialogueChunks[0]);
+                    if (this.npcDialogueChunks.length > 1) {
+                        this.game.ui.showNextArrow(true);
+                    }
+                    this.game.audio.playSelect();
+                }
+            } else {
+                if (this.game.input.isJustPressed('Space')) {
+                    this.npcChunkIndex++;
+                    if (this.npcChunkIndex < this.npcDialogueChunks.length) {
+                        this.game.ui.setMessage(this.npcDialogueChunks[this.npcChunkIndex]);
+                        if (this.npcChunkIndex < this.npcDialogueChunks.length - 1) {
+                            this.game.ui.showNextArrow(true);
+                        }
+                        this.game.audio.playSelect();
+                    } else {
+                        this.npcMessageActive = false;
+                        this.game.player.pose = 'stand';
+                        n.msgIndex = (n.msgIndex + 1) % n.messages.length;
+                        this.game.ui.setMessage(this.mainMessage);
+                        this.game.audio.playSelect();
+                    }
+                }
+            }
+        } else {
+            if (this.npcMessageActive && distSq >= range * range) {
+                this.npcMessageActive = false;
                 this.game.player.pose = 'stand';
             }
-        } else if (!this.game.input.isDown('Space')) {
+            if (!onRug && !this.completed && !this.npcMessageActive) {
+                this.game.ui.setMessage(this.mainMessage);
+            }
+        }
+
+        if (!onRug && !this.npcMessageActive) {
+            this.prayerProgress = 0;
+            if (this.game.player.pose === 'pray') this.game.player.pose = 'stand';
+        } else if (!this.game.input.isDown('Space') && this.game.player.pose === 'pray') {
             this.game.player.pose = 'stand';
         }
     }
+
     draw(renderer) {
         renderer.clear(COLORS.SAND);
-
-        // Pavement/Paths - Use rect to handle camera offset
-        // Horizontal paths
         renderer.rect(0, 100, 400, 20, COLORS.PAVEMENT);
         renderer.rect(0, 300, 400, 20, COLORS.PAVEMENT);
-        // Vertical paths
         renderer.rect(100, 0, 20, 400, COLORS.PAVEMENT);
         renderer.rect(300, 0, 20, 400, COLORS.PAVEMENT);
-
-        // Sort tents by Y to draw them in correct depth order
+        renderer.drawNPCInIhram(this.npc.x, this.npc.y);
         this.tents.sort((a, b) => a.y - b.y);
-
         for (let t of this.tents) {
             renderer.drawTent(t.x, t.y);
-            // Draw rug in front of tent if target
             if (t.isTarget) {
-                // Draw a mini version of the prayer rug
-                // If visited, maybe dim it or remove it? Let's keep it but maybe change color?
-                // Or just keep it as is, but it's no longer interactive.
                 let rugColor = t.visited ? '#555' : COLORS.RUG_GREEN;
                 let fringeColor = t.visited ? '#777' : COLORS.RUG_GOLD;
-
                 renderer.rect(t.x + 10, t.y + 30, 12, 20, rugColor);
-                renderer.rect(t.x + 10, t.y + 28, 12, 2, fringeColor); // Top fringe
-                renderer.rect(t.x + 10, t.y + 50, 12, 2, fringeColor); // Bottom fringe
-                if (!t.visited) {
-                    renderer.rect(t.x + 14, t.y + 34, 4, 12, '#008000'); // Inner
-                }
+                renderer.rect(t.x + 10, t.y + 28, 12, 2, fringeColor);
+                renderer.rect(t.x + 10, t.y + 50, 12, 2, fringeColor);
+                if (!t.visited) renderer.rect(t.x + 14, t.y + 34, 4, 12, '#008000');
             }
         }
-
-        // Draw Prayer Progress Bar if praying
         if (this.game.player.pose === 'pray' && this.prayerProgress > 0) {
             const p = this.game.player;
             renderer.rect(p.x, p.y - 10, 16, 4, '#000');
@@ -584,13 +616,48 @@ class StageArafah extends Stage {
             { x: 20, y: 20 }, { x: 150, y: 40 }, { x: 250, y: 10 }
         ];
         this.signs = [
-            new Sign(50, 200, "Mt. Mercy ^") // Pointing up/towards mountain
+            new Sign(50, 200, "Jabal ar-Rahmah ^") // Pointing up/towards mountain
         ];
+
+        this.complete = false;
+        this.mainMessage = `Stage 3: Arafah (9th Dhul Hijjah). Stand near Jabal ar-Rahmah and ${this.getPrompt("hold SPACE", "hold A")} to Reflect.`;
+
+        // Wise NPC - positioned further bottom right to avoid prayer area clash
+        this.npc = {
+            x: 230, y: 220, w: 16, h: 16,
+            messages: [
+                "'Today is the Day of Arafah, the most important day of Hajj. The Prophet (pbuh) said, \"Hajj is Arafah.\"'",
+                "'Spend your time in sincere Dua and reflection. This is the time for forgiveness.'",
+                "'Remember to recite the Takbir Tashreeq: \"Allahu Akbar, Allahu Akbar, La ilaha illallah, Allahu Akbar, Allahu Akbar, wa lillahil Hamd\" after each prayer.'",
+                "'Stay focused until sunset. We will leave for Muzdalifah once the sun goes down.'"
+            ],
+            msgIndex: 0
+        };
+        this.npcMessageActive = false;
+        this.npcDialogueChunks = [];
+        this.npcChunkIndex = 0;
+    }
+
+    splitMessage(msg, limit = 80) {
+        if (msg.length <= limit) return [msg];
+        const chunks = [];
+        let words = msg.split(' ');
+        let current = "";
+        for (let word of words) {
+            if ((current + " " + word).length > limit) {
+                chunks.push(current.trim());
+                current = word;
+            } else {
+                current += (current === "" ? "" : " ") + word;
+            }
+        }
+        if (current) chunks.push(current.trim());
+        return chunks;
     }
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 250;
-        this.game.ui.setMessage(`Stage 3: Arafah (9th Dhul Hijjah). Stand near Mount Mercy and ${this.getPrompt("hold SPACE", "hold A")} to Reflect.`);
+        this.game.ui.setMessage(this.mainMessage);
         this.game.ui.setHUD("Reflection: 0%");
     }
     update() {
@@ -598,15 +665,66 @@ class StageArafah extends Stage {
         if (this.time > 1) this.time = 1;
         const p = this.game.player;
         const m = this.mountain;
-        const nearMountain = (p.x < m.x + m.w + 20 && p.x + p.w > m.x - 20 &&
-            p.y < m.y + m.h + 20 && p.y + p.h > m.y - 20);
-        if (nearMountain && this.game.input.isDown('Space') && !this.complete) {
+        // Prayer only possible from the bottom of the mountain upwards
+        const inPrayerZone = (p.x < m.x + m.w + 20 && p.x + p.w > m.x - 20 &&
+            p.y + p.h <= m.y + m.h && p.y + p.h > m.y - 40);
+
+        if (inPrayerZone && this.game.input.isDown('Space') && !this.complete && !this.npcMessageActive) {
             this.game.player.pose = 'pray';
             this.reflectionProgress += 0.5;
             if (this.reflectionProgress > this.maxReflection) this.reflectionProgress = this.maxReflection;
             this.game.ui.setHUD(`Reflection: ${Math.floor(this.reflectionProgress)}%`);
-        } else {
+        } else if (this.game.player.pose !== 'interact') {
             this.game.player.pose = 'stand';
+        }
+
+        // NPC Interaction
+        const n = this.npc;
+        const dx = p.x - n.x;
+        const dy = p.y - n.y;
+        const distSq = dx * dx + dy * dy;
+        const range = 25;
+
+        if (distSq < range * range && !inPrayerZone) {
+            if (!this.npcMessageActive) {
+                this.game.ui.setMessage(`Talk to Pilgrim (${this.getPrompt("SPACE", "A")})`);
+                if (this.game.input.isJustPressed('Space')) {
+                    this.npcMessageActive = true;
+                    this.game.player.pose = 'interact';
+                    this.npcDialogueChunks = this.splitMessage(n.messages[n.msgIndex]);
+                    this.npcChunkIndex = 0;
+                    this.game.ui.setMessage(this.npcDialogueChunks[0]);
+                    if (this.npcDialogueChunks.length > 1) {
+                        this.game.ui.showNextArrow(true);
+                    }
+                    this.game.audio.playSelect();
+                }
+            } else {
+                if (this.game.input.isJustPressed('Space')) {
+                    this.npcChunkIndex++;
+                    if (this.npcChunkIndex < this.npcDialogueChunks.length) {
+                        this.game.ui.setMessage(this.npcDialogueChunks[this.npcChunkIndex]);
+                        if (this.npcChunkIndex < this.npcDialogueChunks.length - 1) {
+                            this.game.ui.showNextArrow(true);
+                        }
+                        this.game.audio.playSelect();
+                    } else {
+                        this.npcMessageActive = false;
+                        this.game.player.pose = 'stand';
+                        n.msgIndex = (n.msgIndex + 1) % n.messages.length;
+                        this.game.ui.setMessage(this.mainMessage);
+                        this.game.audio.playSelect();
+                    }
+                }
+            }
+        } else {
+            if (this.npcMessageActive && distSq >= range * range) {
+                this.npcMessageActive = false;
+                this.game.player.pose = 'stand';
+            }
+            if (!this.complete && !this.npcMessageActive && !inPrayerZone) {
+                this.game.ui.setMessage(this.mainMessage);
+            }
         }
         if (this.reflectionProgress >= this.maxReflection && !this.complete) {
             this.complete = true;
@@ -624,6 +742,10 @@ class StageArafah extends Stage {
     }
     draw(renderer) {
         renderer.clear(COLORS.SAND);
+
+        // Draw NPC
+        renderer.drawNPCInIhram(this.npc.x, this.npc.y);
+
         renderer.drawMountain(this.mountain.x, this.mountain.y, this.mountain.w, this.mountain.h);
 
         // Clouds
@@ -1152,16 +1274,28 @@ class StageGrandMosque extends Stage {
         const p = this.game.player;
 
         if (this.mode === 'tawaf') {
-            // Check checkpoints
-            let cp = this.checkpoints[this.currentCheckpoint];
-            if (p.x < cp.x + cp.w && p.x + p.w > cp.x &&
-                p.y < cp.y + cp.h && p.y + p.h > cp.y) {
+            const px = p.x + 8; // Center of player
+            const py = p.y + 8;
+            const cx = 200; // Center of Kaaba
+            const cy = 200;
 
+            let hit = false;
+            // Check if player is in the target quadrant/side of the center line
+            if (this.currentCheckpoint === 0 && px > cx && py > cy) hit = true; // Bottom Right
+            if (this.currentCheckpoint === 1 && px > cx && py < cy) hit = true; // Top Right
+            if (this.currentCheckpoint === 2 && px < cx && py < cy) hit = true; // Top Left
+            if (this.currentCheckpoint === 3 && px < cx && py > cy) hit = true; // Bottom Left (Finish line)
+
+            if (hit) {
                 this.currentCheckpoint++;
+                this.game.audio.playSelect(); // Feedback for checkpoint hit
+
                 if (this.currentCheckpoint > 3) {
                     this.currentCheckpoint = 0;
                     this.laps++;
                     this.game.ui.setHUD(`Tawaf: ${this.laps}/${this.maxLaps}`);
+                    this.game.audio.playComplete(); // Distinct sound for lap completion
+
                     if (this.laps >= this.maxLaps) {
                         this.mode = 'sai';
                         this.game.ui.setMessage("Tawaf complete. Perform Sa'i (Walk between Safa and Marwa).");
@@ -1355,11 +1489,16 @@ class StageJamaratReturn extends Stage {
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 250;
-        this.game.ui.setMessage(`Day ${this.day}: Jamarat. Stone ALL 3 pillars (7 each).`);
+        this.game.ui.setMessage(`Day ${this.day}: Jamarat. Stone pillars in ORDER: Small -> Medium -> Large (7 each).`);
         this.updateHUD();
     }
     updateHUD() {
-        let status = this.pillars.map(p => `${p.name[0]}:${p.stones}`).join(' ');
+        const next = this.pillars.find(p => !p.done);
+        let status = this.pillars.map(p => {
+            let prefix = p.name[0];
+            if (p === next) prefix = "[" + prefix + "]"; // Highlight current target
+            return `${prefix}:${p.stones}`;
+        }).join(' ');
         this.game.ui.setHUD(status);
     }
     update() {
@@ -1370,7 +1509,7 @@ class StageJamaratReturn extends Stage {
             const p = this.game.player;
 
             for (let pillar of this.pillars) {
-                if (pillar.done) continue;
+                // Now targeting ANY pillar within range, even if done or out of order
                 let dx = (pillar.x + pillar.w / 2) - p.x;
                 let dy = (pillar.y + pillar.h / 2) - p.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
@@ -1403,14 +1542,29 @@ class StageJamaratReturn extends Stage {
 
             if (Math.abs(p.x - tx) < 5 && Math.abs(p.y - ty) < 5) {
                 this.projectiles.splice(i, 1);
-                p.target.stones++;
-                this.game.audio.playImpact();
-                if (p.target.stones >= this.targetStones) {
-                    p.target.done = true;
-                    p.target.stones = this.targetStones; // Cap it
+
+                // Enforce order: Small -> Medium -> Large
+                const nextRequired = this.pillars.find(pillar => !pillar.done);
+
+                if (p.target === nextRequired) {
+                    p.target.stones++;
+                    this.game.audio.playImpact();
+                    if (p.target.stones >= this.targetStones) {
+                        p.target.done = true;
+                        p.target.stones = this.targetStones; // Cap it
+                        this.game.ui.setMessage(`${p.target.name} pillar complete! Next sequence...`);
+                    }
+                    this.updateHUD();
+                    this.checkCompletion();
+                } else {
+                    // Out of order or already done
+                    this.game.audio.playSelect(); // Different sound for "hit but no count"
+                    if (p.target.done) {
+                        this.game.ui.setMessage(`${p.target.name} pillar is already done.`);
+                    } else {
+                        this.game.ui.setMessage(`Out of order! Stone the ${nextRequired.name} pillar first.`);
+                    }
                 }
-                this.updateHUD();
-                this.checkCompletion();
             }
         }
     }
@@ -1418,15 +1572,15 @@ class StageJamaratReturn extends Stage {
         if (this.pillars.every(p => p.done) && !this.completed) {
             this.completed = true;
             if (this.day === 12) {
-                this.game.ui.setMessage("Day 12 Complete. Return to Mina for Night 12.");
+                this.game.ui.setMessage("Day 11 Complete. Return to Mina for Night 11.");
                 setTimeout(() => {
                     this.game.changeStage(new StageCutscene(this.game, [
-                        "Day 12 Complete.",
-                        "Destination: Mina (Night 12)"
+                        "Day 11 Complete.",
+                        "Destination: Mina (Night 11)"
                     ], new StageMinaReturn(this.game, 12, 13)));
                 }, 2000);
             } else {
-                this.game.ui.setMessage("Day 13 Complete. Proceed to Farewell Tawaf.");
+                this.game.ui.setMessage("Day 12 Complete. Proceed to Farewell Tawaf.");
                 setTimeout(() => {
                     this.game.changeStage(new StageBusCutscene(this.game, new StageFarewell(this.game), "Traveling to Farewell Tawaf..."));
                 }, 2000);
@@ -1485,14 +1639,27 @@ class StageFarewell extends Stage {
     }
     update() {
         const p = this.game.player;
-        let cp = this.checkpoints[this.currentCheckpoint];
-        if (p.x < cp.x + cp.w && p.x + p.w > cp.x &&
-            p.y < cp.y + cp.h && p.y + p.h > cp.y) {
+        const px = p.x + 8;
+        const py = p.y + 8;
+        const cx = 200;
+        const cy = 200;
+
+        let hit = false;
+        if (this.currentCheckpoint === 0 && px > cx && py > cy) hit = true; // BR
+        if (this.currentCheckpoint === 1 && px > cx && py < cy) hit = true; // TR
+        if (this.currentCheckpoint === 2 && px < cx && py < cy) hit = true; // TL
+        if (this.currentCheckpoint === 3 && px < cx && py > cy) hit = true; // BL
+
+        if (hit) {
             this.currentCheckpoint++;
+            this.game.audio.playSelect(); // Feedback for checkpoint hit
+
             if (this.currentCheckpoint > 3) {
                 this.currentCheckpoint = 0;
                 this.laps++;
                 this.game.ui.setHUD(`Farewell: ${this.laps}/${this.maxLaps}`);
+                this.game.audio.playComplete(); // Lap sound
+
                 if (this.laps >= this.maxLaps && !this.completed) {
                     this.completed = true;
                     this.game.ui.setMessage("HAJJ MUBARAK! Game Over.");

@@ -25,7 +25,7 @@ class Player {
     }
 
     update(input, solids, mapW, mapH) {
-        if (this.pose === 'pray' || this.pose === 'sleep') return;
+        if (this.pose === 'pray' || this.pose === 'sleep' || this.pose === 'interact') return;
 
         let dx = 0;
         let dy = 0;

@@ -14,6 +14,7 @@ const COLORS = {
     WHITE: '#ffffff',
     BLACK: '#000000',
     SKIN: '#ffccaa',
+    SKIN_DARK: '#8b4513',
     SHIRT: '#4488cc',
     PANTS: '#333333',
     MOUNTAIN: '#606060',

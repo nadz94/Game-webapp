@@ -416,4 +416,46 @@ class Renderer {
         this.ctx.fillRect(sx + 14, sy + 6, 4, 1);
         this.ctx.fillRect(sx + 14, sy + 6, 1, 4);
     }
+
+    drawNPCInIhram(x, y) {
+        const dx = x;
+        const dy = y;
+        const grey = '#aaaaaa';
+
+        // --- FEET ---
+        this.rect(dx + 4, dy + 14, 3, 2, COLORS.SKIN_DARK);
+        this.rect(dx + 4, dy + 15, 3, 1, COLORS.SANDAL);
+        this.rect(dx + 9, dy + 14, 3, 2, COLORS.SKIN_DARK);
+        this.rect(dx + 9, dy + 15, 3, 1, COLORS.SANDAL);
+
+        // --- BODY (Ihram) ---
+        this.rect(dx + 3, dy + 6, 10, 9, COLORS.WHITE);
+        this.rect(dx + 10, dy + 6, 3, 3, COLORS.SKIN_DARK); // Idtiba
+
+        this.rect(dx + 3, dy + 8, 2, 1, COLORS.IHRAM_SHADOW);
+        this.rect(dx + 11, dy + 10, 2, 1, COLORS.IHRAM_SHADOW);
+        this.rect(dx + 4, dy + 12, 8, 1, COLORS.IHRAM_SHADOW);
+
+        // --- ARMS ---
+        this.rect(dx + 1, dy + 6, 3, 6, COLORS.SKIN_DARK);
+        this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN_DARK);
+
+        // --- HEAD ---
+        this.rect(dx + 4, dy, 8, 7, COLORS.SKIN_DARK);
+
+        // Balding: Hair only on sides (grey)
+        this.rect(dx + 3, dy + 1, 1, 3, grey); // Sideburn L
+        this.rect(dx + 12, dy + 1, 1, 3, grey); // Sideburn R
+        this.rect(dx + 4, dy, 1, 2, grey); // Top corner L
+        this.rect(dx + 11, dy, 1, 2, grey); // Top corner R
+
+        // Grey Beard
+        this.rect(dx + 4, dy + 5, 8, 3, grey); // Beard bottom
+        this.rect(dx + 3, dy + 4, 1, 2, grey); // Side beard L
+        this.rect(dx + 12, dy + 4, 1, 2, grey); // Side beard R
+
+        // Eyes
+        this.rect(dx + 5, dy + 3, 2, 2, COLORS.BLACK);
+        this.rect(dx + 9, dy + 3, 2, 2, COLORS.BLACK);
+    }
 }
