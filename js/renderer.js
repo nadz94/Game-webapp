@@ -426,8 +426,6 @@ class Renderer {
         this.rect(dx + 5, dy + 3, 2, 2, COLORS.BLACK); // Eye L
         this.rect(dx + 9, dy + 3, 2, 2, COLORS.BLACK); // Eye R
 
-        // Moustache
-        this.rect(dx + 5, dy + 5, 6, 1, COLORS.HAIR);
         // Mouth
         this.rect(dx + 6, dy + 6, 4, 1, '#ff8080'); // Small mouth
 
