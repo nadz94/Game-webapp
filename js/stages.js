@@ -426,7 +426,7 @@ class StageMina extends Stage {
         this.npc = {
             x: 200, y: 200, w: 16, h: 16,
             messages: [
-                "Pilgrim: 'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
+                "Pilgrim: 'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka lak.'",
                 "Pilgrim: 'Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
                 "Pilgrim: 'Patience and kindness are your best companions on this journey.'",
                 "Pilgrim: 'In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
@@ -1258,7 +1258,7 @@ class StageGrandMosque extends Stage {
         this.mapH = 400;
         this.kaaba = { x: 168, y: 136, w: 64, h: 64 };
         this.hateem = { x: 168 + 64, y: 136 + 4, w: 32, h: 56 };
-        this.maqam = { x: 194, y: 260, w: 12, h: 14 };
+        this.maqam = { x: 194, y: 250, w: 12, h: 14 };
         this.solids = [
             this.kaaba, this.hateem, this.maqam,
             { x: 0, y: 0, w: this.mapW, h: 40 } // Arches/Wall
@@ -1432,7 +1432,27 @@ class StageMinaReturn extends Stage {
         this.mapH = 400;
         this.tents = [];
 
-        // Generate non-overlapping tents
+        // Road definitions (same as StageMina)
+        this.roads = [
+            { x: 0, y: 100, w: 400, h: 20 },
+            { x: 0, y: 300, w: 400, h: 20 },
+            { x: 100, y: 0, w: 20, h: 400 },
+            { x: 300, y: 0, w: 20, h: 400 }
+        ];
+
+        const overlapsRoad = (tent) => {
+            const padding = 10;
+            const tL = tent.x - padding;
+            const tR = tent.x + tent.w + padding;
+            const tT = tent.y - padding;
+            const tB = tent.y + tent.h + 10;
+            for (let r of this.roads) {
+                if (tL < r.x + r.w && tR > r.x && tT < r.y + r.h && tB > r.y) return true;
+            }
+            return false;
+        };
+
+        // Generate non-overlapping tents away from roads
         let attempts = 0;
         while (this.tents.length < 20 && attempts < 1000) {
             let t = {
@@ -1440,6 +1460,7 @@ class StageMinaReturn extends Stage {
                 y: Math.random() * (this.mapH - 60) + 10,
                 w: 32, h: 32
             };
+            if (overlapsRoad(t)) { attempts++; continue; }
             let overlap = false;
             for (let other of this.tents) {
                 if (t.x < other.x + other.w + 10 && t.x + t.w + 10 > other.x &&
@@ -1498,8 +1519,14 @@ class StageMinaReturn extends Stage {
         }
     }
     draw(renderer) {
-        // Night sky background
-        renderer.rect(0, 0, this.mapW, this.mapH, COLORS.SKY_NIGHT);
+        // Night-time sand ground
+        renderer.rect(0, 0, this.mapW, this.mapH, COLORS.SAND_DARK);
+
+        // Draw roads (darker pavement for night)
+        const nightPavement = '#444444';
+        for (let r of this.roads) {
+            renderer.rect(r.x, r.y, r.w, r.h, nightPavement);
+        }
 
         // Draw tents
         this.tents.sort((a, b) => a.y - b.y);
@@ -1680,7 +1707,7 @@ class StageFarewell extends Stage {
         this.mapH = 400;
         this.kaaba = { x: 168, y: 136, w: 64, h: 64 };
         this.hateem = { x: 168 + 64, y: 136 + 4, w: 32, h: 56 };
-        this.maqam = { x: 194, y: 260, w: 12, h: 14 };
+        this.maqam = { x: 194, y: 250, w: 12, h: 14 };
         this.solids = [
             this.kaaba, this.hateem, this.maqam,
             { x: 0, y: 0, w: this.mapW, h: 40 } // Arches/Wall
