@@ -33,7 +33,7 @@ canvas {
     position: relative;
     width: 90%;
     margin: 10px auto;
-    min-height: 80px;
+    height: 90px;
     background: #000;
     border: 4px double #fff;
     padding: 15px;
@@ -42,6 +42,7 @@ canvas {
     flex-direction: column;
     justify-content: center;
     border-radius: 4px;
+    overflow: hidden;
 }
 
 .hidden {
@@ -69,11 +70,14 @@ canvas {
 
 #message-box {
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 18px;
+    /* Fixed line height (1.5 * 12px) */
+    height: 54px;
+    /* Fixed height for 3 lines (18 * 3) */
     color: #fff;
     text-shadow: 1px 1px 0 #000;
     padding-right: 20px;
-    /* Space for the arrow */
+    overflow: hidden;
 }
 
 #hud {

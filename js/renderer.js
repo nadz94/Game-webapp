@@ -392,29 +392,50 @@ class Renderer {
     }
 
     drawBarber(x, y) {
-        const sx = Math.floor(x - this.camera.x);
-        const sy = Math.floor(y - this.camera.y);
+        const dx = Math.floor(x);
+        const dy = Math.floor(y);
 
-        // Face
-        this.ctx.fillStyle = COLORS.SKIN;
-        this.ctx.fillRect(sx + 4, sy, 8, 7);
-        // Hair
-        this.ctx.fillStyle = COLORS.HAIR;
-        this.ctx.fillRect(sx + 4, sy, 8, 2);
-        this.ctx.fillRect(sx + 3, sy + 1, 1, 3);
-        this.ctx.fillRect(sx + 12, sy + 1, 1, 3);
+        // --- FEET ---
+        this.rect(dx + 4, dy + 14, 3, 2, COLORS.BLACK);
+        this.rect(dx + 9, dy + 14, 3, 2, COLORS.BLACK);
 
-        // White Coat
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(sx + 3, sy + 6, 10, 9);
+        // --- OUTFIT ---
         // Pants
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(sx + 4, sy + 12, 8, 3);
+        this.rect(dx + 4, dy + 12, 8, 3, COLORS.PANTS);
+        // Shirt (Light blue professional look)
+        const shirtColor = '#e3f2fd';
+        this.rect(dx + 3, dy + 6, 10, 7, shirtColor);
+        // Apron (Professional barber look)
+        this.rect(dx + 4, dy + 7, 8, 6, '#5d4037');
 
-        // Scissors
-        this.ctx.fillStyle = '#c0c0c0';
-        this.ctx.fillRect(sx + 14, sy + 6, 4, 1);
-        this.ctx.fillRect(sx + 14, sy + 6, 1, 4);
+        // --- ARMS ---
+        this.rect(dx + 1, dy + 6, 3, 6, COLORS.SKIN);
+        this.rect(dx + 12, dy + 6, 3, 6, COLORS.SKIN);
+        // Sleeves
+        this.rect(dx + 1, dy + 6, 3, 3, shirtColor);
+        this.rect(dx + 12, dy + 6, 3, 3, shirtColor);
+
+        // --- HEAD ---
+        this.rect(dx + 4, dy, 8, 7, COLORS.SKIN);
+        // Hair
+        this.rect(dx + 4, dy, 8, 2, COLORS.HAIR);
+        this.rect(dx + 3, dy + 1, 1, 3, COLORS.HAIR);
+        this.rect(dx + 12, dy + 1, 1, 3, COLORS.HAIR);
+
+        // Face Features
+        this.rect(dx + 5, dy + 3, 2, 2, COLORS.BLACK); // Eye L
+        this.rect(dx + 9, dy + 3, 2, 2, COLORS.BLACK); // Eye R
+
+        // Moustache
+        this.rect(dx + 5, dy + 5, 6, 1, COLORS.HAIR);
+        // Mouth
+        this.rect(dx + 6, dy + 6, 4, 1, '#ff8080'); // Small mouth
+
+        // --- TOOLS (Right Hand) ---
+        // Metal scissors
+        this.rect(dx + 13, dy + 8, 5, 1, '#c0c0c0');
+        this.rect(dx + 13, dy + 10, 5, 1, '#c0c0c0');
+        this.rect(dx + 12, dy + 9, 2, 1, '#757575'); // Pivot
     }
 
     drawNPCInIhram(x, y) {

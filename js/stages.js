@@ -1095,7 +1095,7 @@ class StageSacrifice extends Stage {
     enter() {
         this.game.player.x = 200; // Center below signboards
         this.game.player.y = 230; // Below the signboards
-        this.game.ui.setMessage(`Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone. ${this.getPrompt("Press SPACE", "Tap A")} to interact.`);
+        this.game.ui.setMessage(`Stage 6: Sacrifice. Go to the pen and lead an animal to the marked zone. ${this.getPrompt("Press SPACE", "Tap A")} to lead.`);
         this.game.ui.setHUD("Sacrifice: Pending");
     }
 
