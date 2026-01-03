@@ -426,7 +426,7 @@ class StageMina extends Stage {
         this.npc = {
             x: 200, y: 200, w: 16, h: 16,
             messages: [
-                "Pilgrim: 'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka lak.'",
+                "Pilgrim: 'Recite the Talbiyah: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka lak.'",
                 "Pilgrim: 'Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
                 "Pilgrim: 'Patience and kindness are your best companions on this journey.'",
                 "Pilgrim: 'In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
@@ -1294,8 +1294,8 @@ class StageGrandMosque extends Stage {
     }
 
     enter() {
-        this.game.player.x = 135; // Start near Black Stone (Bottom Left)
-        this.game.player.y = 195;
+        this.game.player.x = 125; // Start near Black Stone (Bottom Left)
+        this.game.player.y = 185;
         this.game.player.isIhram = false; // Transition to Thobe and Hat
         this.tawafStartDialogueTriggered = false;
         this.isDialoguePaused = false;
@@ -1725,8 +1725,8 @@ class StageFarewell extends Stage {
         this.completionTime = 0;
     }
     enter() {
-        this.game.player.x = 140;
-        this.game.player.y = 200;
+        this.game.player.x = 125;
+        this.game.player.y = 185;
         this.tawafStartDialogueTriggered = false;
         this.isDialoguePaused = false;
         this.game.ui.setMessage("Stage 8: Farewell Tawaf. Perform 7 laps.");
