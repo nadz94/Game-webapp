@@ -267,8 +267,8 @@ class Renderer {
             this.rect(x + 15, y - 10, 10, 10, '#fff');
             this.rect(x + 17, y - 8, 6, 6, '#f00');
         } else if (type === 'scissors') {
-            // Barber Pole
-            const px = x + 32;
+            // Barber Pole - sticking out the right side
+            const px = x + 40;
             const py = y - 5;
 
             // Pole Base
@@ -283,14 +283,13 @@ class Renderer {
             this.rect(px + 1, py + 2, 4, 14, '#fff');
 
             // Stripes (Red and Blue diagonals)
-            // Simple pixel art diagonals
             this.rect(px + 1, py + 3, 4, 2, '#d00'); // Red
             this.rect(px + 1, py + 7, 4, 2, '#00d'); // Blue
             this.rect(px + 1, py + 11, 4, 2, '#d00'); // Red
             this.rect(px + 1, py + 15, 4, 1, '#00d'); // Blue partial
 
-            // Signboard text
-            this.drawSign(x + 5, y - 10, "Barber");
+            // Signboard text - centered on the 40px wide stall
+            this.drawSign(x + 20, y - 10, "Barber");
         }
     }
 
@@ -345,6 +344,108 @@ class Renderer {
         this.ctx.beginPath();
         this.ctx.arc(bsX, bsY, 3, 0, Math.PI * 2);
         this.ctx.fill();
+    }
+
+    drawMaqamIbrahim(x, y) {
+        const sx = Math.floor(x - this.camera.x);
+        const sy = Math.floor(y - this.camera.y);
+        const w = 14;
+        const h = 22;
+
+        // 1. Dark Base (Hexagonal look in 2D)
+        this.ctx.fillStyle = '#2c2c2c'; // Dark grey
+        this.ctx.fillRect(sx - 1, sy + 18, w + 2, 4);
+        this.ctx.fillStyle = '#444'; // Shading on base
+        this.ctx.fillRect(sx + 1, sy + 18, w - 2, 4);
+
+        // 2. Main Middle Structure (Gold Cage)
+        this.ctx.fillStyle = '#b8860b'; // Deep gold for frame
+        this.ctx.fillRect(sx, sy + 6, w, 12);
+
+        // Lattice/Arches (Inner part of windows)
+        this.ctx.fillStyle = '#f0e68c'; // Paler gold for lattice
+        this.ctx.fillRect(sx + 1, sy + 7, w - 2, 10);
+
+        // Mesh details (Cross-hatching)
+        this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        for (let i = 1; i < w - 1; i += 2) {
+            this.ctx.fillRect(sx + i, sy + 7, 1, 10);
+        }
+        for (let j = 7; j < 17; j += 2) {
+            this.ctx.fillRect(sx + 1, sy + j, w - 2, 1);
+        }
+
+        // Golden Arches on top of windows
+        this.ctx.fillStyle = '#b8860b';
+        this.ctx.fillRect(sx + 1, sy + 7, 12, 2);
+        this.ctx.fillRect(sx + 4, sy + 8, 6, 1);
+
+        // 3. Golden Top Section (Tapered)
+        this.ctx.fillStyle = '#daa520'; // Goldenrod
+        this.ctx.fillRect(sx + 1, sy + 4, w - 2, 2); // Slope base
+        this.ctx.fillRect(sx + 3, sy + 2, w - 6, 2); // Small dome base
+
+        // Small Dome
+        this.ctx.fillStyle = '#b8860b';
+        this.ctx.fillRect(sx + 5, sy, 4, 3);
+
+        // 4. Crescent Moon (Finial)
+        this.ctx.fillStyle = '#daa520';
+        this.ctx.fillRect(sx + 6, sy - 2, 2, 2); // Stem
+        this.ctx.fillRect(sx + 5, sy - 4, 4, 1); // Moon bottom
+        this.ctx.fillRect(sx + 4, sy - 5, 2, 1); // Moon L
+        this.ctx.fillRect(sx + 8, sy - 5, 2, 1); // Moon R
+    }
+
+    drawMosqueArches(mapW) {
+        const archWidth = 40;
+        const groundY = 60;
+        const topOfArches = 20; // Shift down to see domes
+
+        for (let x = 0; x < mapW; x += archWidth) {
+            const sx = Math.floor(x - this.camera.x);
+            const sy = Math.floor(topOfArches - this.camera.y);
+
+            // 1. Back Structure (Stone color)
+            this.rect(x, topOfArches, archWidth, groundY, '#d2b48c');
+
+            // 2. Arch Opening (Pointed Curve)
+            this.ctx.fillStyle = '#f5f5f5';
+            this.ctx.beginPath();
+            this.ctx.moveTo(sx + 6, sy + groundY);
+            this.ctx.lineTo(sx + 6, sy + 25);
+            this.ctx.quadraticCurveTo(sx + archWidth / 2, sy + 5, sx + archWidth - 6, sy + 25);
+            this.ctx.lineTo(sx + archWidth - 6, sy + groundY);
+            this.ctx.fill();
+
+            // 3. Arch Trim
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(sx + 5, sy + groundY);
+            this.ctx.lineTo(sx + 5, sy + 25);
+            this.ctx.quadraticCurveTo(sx + archWidth / 2, sy + 4, sx + archWidth - 5, sy + 25);
+            this.ctx.lineTo(sx + archWidth - 5, sy + groundY);
+            this.ctx.stroke();
+
+            // 4. Pillars
+            this.rect(x + 2, topOfArches + 20, 4, groundY - 20, '#e0e0e0');
+            this.rect(x + archWidth - 6, topOfArches + 20, 4, groundY - 20, '#e0e0e0');
+
+            // Pillar Bases
+            this.rect(x, topOfArches + groundY - 5, 8, 5, '#5d4037');
+            this.rect(x + archWidth - 8, topOfArches + groundY - 5, 8, 5, '#5d4037');
+
+            // 5. Gold Detail
+            this.rect(x + 10, topOfArches + 15, archWidth - 20, 2, COLORS.KAABA_GOLD);
+
+            // 6. Domes on top
+            this.rect(x + 12, topOfArches - 4, archWidth - 24, 4, '#ffffff');
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.arc(sx + archWidth / 2, sy - 8, 10, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
     }
 
     drawSheep(x, y) {

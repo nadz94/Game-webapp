@@ -426,11 +426,11 @@ class StageMina extends Stage {
         this.npc = {
             x: 200, y: 200, w: 16, h: 16,
             messages: [
-                "'Pilgrim: Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
-                "'Pilgrim: Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
-                "'Pilgrim: Patience and kindness are your best companions on this journey.'",
-                "'Pilgrim: In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
-                "'Pilgrim: Take this time to reflect and prepare your heart for the Day of Arafah.'"
+                "Pilgrim: 'Recite the Talbiyah often: 'Labbayk Allaahumma labbayk, labbayk laa shareeka laka labbayk, \'innal-hamda, wanni\'mata, laka walmulk, laa shareeka laka.'",
+                "Pilgrim: 'Here I am O Allah, here I am. Here I am. You have no partner, here I am. Indeed, all praise, grace, and sovereignty belong to You. There is no partner to You.'",
+                "Pilgrim: 'Patience and kindness are your best companions on this journey.'",
+                "Pilgrim: 'In Mina, we pray the five daily prayers: Dhuhr, Asr, Maghrib, Isha, and Fajr tomorrow.'",
+                "Pilgrim: 'Take this time to reflect and prepare your heart for the Day of Arafah.'"
             ],
             msgIndex: 0
         };
@@ -624,12 +624,12 @@ class StageArafah extends Stage {
 
         // Wise NPC - positioned further bottom right to avoid prayer area clash
         this.npc = {
-            x: 230, y: 220, w: 16, h: 16,
+            x: 150, y: 220, w: 16, h: 16,
             messages: [
-                "'Pilgrim: Today is the Day of Arafah, the most important day of Hajj. The Prophet (pbuh) said, \"Hajj is Arafah.\"'",
-                "'Pilgrim: Spend your time in sincere Dua and reflection. This is the time for forgiveness.'",
-                "'Pilgrim: Remember to recite the Takbir Tashreeq: \"Allahu Akbar, Allahu Akbar, La ilaha illallah, Allahu Akbar, Allahu Akbar, wa lillahil Hamd\" after each prayer.'",
-                "'Pilgrim: Stay focused until sunset. We will leave for Muzdalifah once the sun goes down.'"
+                "Pilgrim: 'Today is the Day of Arafah, the most important day of Hajj. The Prophet (pbuh) said, \"Hajj is Arafah.\"'",
+                "Pilgrim: 'Spend your time in sincere Dua and reflection. This is the time for forgiveness.'",
+                "Pilgrim: 'Remember to recite the Takbir Tashreeq: \"Allahu Akbar, Allahu Akbar, La ilaha illallah, Allahu Akbar, Allahu Akbar, wa lillahil Hamd\" after each prayer.'",
+                "Pilgrim: 'Stay focused until sunset. We will leave for Muzdalifah once the sun goes down.'"
             ],
             msgIndex: 0
         };
@@ -1256,17 +1256,21 @@ class StageGrandMosque extends Stage {
         super(game);
         this.mapW = 400;
         this.mapH = 400;
-        this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
-        this.hateem = { x: 168 + 64, y: 168 + 4, w: 32, h: 56 };
-        this.solids = [this.kaaba, this.hateem];
+        this.kaaba = { x: 168, y: 136, w: 64, h: 64 };
+        this.hateem = { x: 168 + 64, y: 136 + 4, w: 32, h: 56 };
+        this.maqam = { x: 194, y: 260, w: 12, h: 14 };
+        this.solids = [
+            this.kaaba, this.hateem, this.maqam,
+            { x: 0, y: 0, w: this.mapW, h: 40 } // Arches/Wall
+        ];
 
         // Tawaf Checkpoints (Anti-Clockwise starting from Black Stone/Bottom-Left)
         // Target sequence: Bottom Right -> Top Right -> Top Left -> Bottom Left (Lap Complete)
         this.checkpoints = [
-            { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
-            { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
-            { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 2 }, // Top Left
-            { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left (Black Stone)
+            { x: 168 + 64, y: 136 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
+            { x: 168 + 64, y: 136 - 20, w: 20, h: 20, id: 1 }, // Top Right
+            { x: 168 - 20, y: 136 - 20, w: 20, h: 20, id: 2 }, // Top Left
+            { x: 168 - 20, y: 136 + 64, w: 20, h: 20, id: 3 }  // Bottom Left (Black Stone)
         ];
         this.currentCheckpoint = 0;
         this.laps = 0;
@@ -1290,9 +1294,11 @@ class StageGrandMosque extends Stage {
     }
 
     enter() {
-        this.game.player.x = 140; // Start near Black Stone (Bottom Left)
-        this.game.player.y = 240;
+        this.game.player.x = 135; // Start near Black Stone (Bottom Left)
+        this.game.player.y = 195;
         this.game.player.isIhram = false; // Transition to Thobe and Hat
+        this.tawafStartDialogueTriggered = false;
+        this.isDialoguePaused = false;
         this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps Anti-Clockwise).");
         this.game.ui.setHUD(`Tawaf: 0/${this.maxLaps}`);
     }
@@ -1300,25 +1306,44 @@ class StageGrandMosque extends Stage {
     update() {
         const p = this.game.player;
 
+        if (this.isDialoguePaused) {
+            if (this.game.input.isJustPressed('Space')) {
+                this.isDialoguePaused = false;
+                this.game.player.pose = 'stand';
+                this.game.ui.setMessage(this.mode === 'tawaf' ? "Perform Tawaf (7 laps Anti-Clockwise)." : "Perform Sa'i.");
+            }
+            return;
+        }
+
         if (this.mode === 'tawaf') {
             const px = p.x + 8; // Center of player
             const py = p.y + 8;
             const cx = 200; // Center of Kaaba
-            const cy = 200;
+            const cy = 168; // New center (136 + 32)
 
             const dx = px - cx;
             const dy = py - cy;
 
+            // First-time start dialogue at Black Stone corner
+            if (!this.tawafStartDialogueTriggered && dy > Math.abs(dx)) {
+                this.tawafStartDialogueTriggered = true;
+                this.isDialoguePaused = true;
+                this.game.player.pose = 'interact';
+                this.game.ui.setMessage("Bismillahi Allahu Akbar. (Press SPACE to continue)");
+                this.game.audio.playSelect();
+                return;
+            }
+
             let hit = false;
-            // Diagonal Regions:
-            // 0: Bottom (dy > |dx|)
-            // 1: Right (dx > |dy|)
-            // 2: Top (dy < -|dx|)
-            // 3: Left (dx < -|dy|) - Lap completes when returning to Black Stone area
-            if (this.currentCheckpoint === 0 && dy > Math.abs(dx)) hit = true;
-            if (this.currentCheckpoint === 1 && dx > Math.abs(dy)) hit = true;
-            if (this.currentCheckpoint === 2 && dy < -Math.abs(dx)) hit = true;
-            if (this.currentCheckpoint === 3 && dx < -Math.abs(dy)) hit = true;
+            // Diagonal Regions (Anti-Clockwise starting from bottom-right):
+            // 0: Right (dx > |dy|)
+            // 1: Top (dy < -|dx|)
+            // 2: Left (dx < -|dy|)
+            // 3: Bottom (dy > |dx|) - Lap completes when returning to the Black Stone corner (Bottom-Left)
+            if (this.currentCheckpoint === 0 && dx > Math.abs(dy)) hit = true;
+            if (this.currentCheckpoint === 1 && dy < -Math.abs(dx)) hit = true;
+            if (this.currentCheckpoint === 2 && dx < -Math.abs(dy)) hit = true;
+            if (this.currentCheckpoint === 3 && dy > Math.abs(dx)) hit = true;
 
             if (hit) {
                 this.currentCheckpoint++;
@@ -1358,9 +1383,9 @@ class StageGrandMosque extends Stage {
 
                     if (this.saiTrips >= this.maxSai) {
                         this.saiComplete = true;
-                        this.game.ui.setMessage("Sa'i complete. Return to Mina for Night 11.");
+                        this.game.ui.setMessage("Sa'i complete. Return to Mina for Night 10.");
                         setTimeout(() => {
-                            this.game.changeStage(new StageBusCutscene(this.game, new StageMinaReturn(this.game, 11, 12), "Returning to Mina..."));
+                            this.game.changeStage(new StageBusCutscene(this.game, new StageMinaReturn(this.game, 10, 11), "Returning to Mina (Night 10)..."));
                         }, 2000);
                     } else {
                         this.targetHill = (this.targetHill === this.safa) ? this.marwa : this.safa;
@@ -1373,7 +1398,9 @@ class StageGrandMosque extends Stage {
 
     draw(renderer) {
         renderer.drawMarbleFloor(this.mapW, this.mapH);
+        renderer.drawMosqueArches(this.mapW);
         renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
+        renderer.drawMaqamIbrahim(this.maqam.x, this.maqam.y);
 
         if (this.mode === 'sai') {
             // Draw path/track between Safa and Marwa
@@ -1606,18 +1633,18 @@ class StageJamaratReturn extends Stage {
     checkCompletion() {
         if (this.pillars.every(p => p.done) && !this.completed) {
             this.completed = true;
-            if (this.day === 12) {
+            if (this.day === 11) {
                 this.game.ui.setMessage("Day 11 Complete. Return to Mina for Night 11.");
                 setTimeout(() => {
                     this.game.changeStage(new StageCutscene(this.game, [
                         "Day 11 Complete.",
                         "Destination: Mina (Night 11)"
-                    ], new StageMinaReturn(this.game, 12, 13)));
+                    ], new StageMinaReturn(this.game, 11, 12)));
                 }, 2000);
             } else {
-                this.game.ui.setMessage("Day 12 Complete. Proceed to Farewell Tawaf.");
+                this.game.ui.setMessage("Day 12 Complete. Proceed to Farewell Tawaf (12th Night).");
                 setTimeout(() => {
-                    this.game.changeStage(new StageBusCutscene(this.game, new StageFarewell(this.game), "Traveling to Farewell Tawaf..."));
+                    this.game.changeStage(new StageBusCutscene(this.game, new StageFarewell(this.game), "Traveling to Farewell Tawaf (12th Night)..."));
                 }, 2000);
             }
         }
@@ -1651,14 +1678,18 @@ class StageFarewell extends Stage {
         super(game);
         this.mapW = 400;
         this.mapH = 400;
-        this.kaaba = { x: 168, y: 168, w: 64, h: 64 };
-        this.hateem = { x: 168 + 64, y: 168 + 4, w: 32, h: 56 };
-        this.solids = [this.kaaba, this.hateem];
+        this.kaaba = { x: 168, y: 136, w: 64, h: 64 };
+        this.hateem = { x: 168 + 64, y: 136 + 4, w: 32, h: 56 };
+        this.maqam = { x: 194, y: 260, w: 12, h: 14 };
+        this.solids = [
+            this.kaaba, this.hateem, this.maqam,
+            { x: 0, y: 0, w: this.mapW, h: 40 } // Arches/Wall
+        ];
         this.checkpoints = [
-            { x: 168 + 64, y: 168 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
-            { x: 168 + 64, y: 168 - 20, w: 20, h: 20, id: 1 }, // Top Right
-            { x: 168 - 20, y: 168 - 20, w: 20, h: 20, id: 2 }, // Top Left
-            { x: 168 - 20, y: 168 + 64, w: 20, h: 20, id: 3 }  // Bottom Left
+            { x: 168 + 64, y: 136 + 64, w: 20, h: 20, id: 0 }, // Bottom Right
+            { x: 168 + 64, y: 136 - 20, w: 20, h: 20, id: 1 }, // Top Right
+            { x: 168 - 20, y: 136 - 20, w: 20, h: 20, id: 2 }, // Top Left
+            { x: 168 - 20, y: 136 + 64, w: 20, h: 20, id: 3 }  // Bottom Left
         ];
         this.currentCheckpoint = 0;
         this.laps = 0;
@@ -1668,26 +1699,52 @@ class StageFarewell extends Stage {
     }
     enter() {
         this.game.player.x = 140;
-        this.game.player.y = 240;
+        this.game.player.y = 200;
+        this.tawafStartDialogueTriggered = false;
+        this.isDialoguePaused = false;
         this.game.ui.setMessage("Stage 8: Farewell Tawaf. Perform 7 laps.");
         this.game.ui.setHUD(`Farewell: 0/${this.maxLaps}`);
     }
     update() {
         const p = this.game.player;
+
+        if (this.isDialoguePaused) {
+            if (this.game.input.isJustPressed('Space')) {
+                this.isDialoguePaused = false;
+                this.game.player.pose = 'stand';
+                this.game.ui.setMessage("Farewell Tawaf. Perform 7 laps.");
+            }
+            return;
+        }
+
         const px = p.x + 8;
         const py = p.y + 8;
         const cx = 200;
-        const cy = 200;
+        const cy = 168; // New center (136 + 32)
 
         const dx = px - cx;
         const dy = py - cy;
 
+        // First-time start dialogue at Black Stone corner
+        if (!this.tawafStartDialogueTriggered && dy > Math.abs(dx)) {
+            this.tawafStartDialogueTriggered = true;
+            this.isDialoguePaused = true;
+            this.game.player.pose = 'interact';
+            this.game.ui.setMessage("Bismillahi Allahu Akbar. (Press SPACE to continue)");
+            this.game.audio.playSelect();
+            return;
+        }
+
         let hit = false;
-        // Diagonal Regions
-        if (this.currentCheckpoint === 0 && dy > Math.abs(dx)) hit = true;
-        if (this.currentCheckpoint === 1 && dx > Math.abs(dy)) hit = true;
-        if (this.currentCheckpoint === 2 && dy < -Math.abs(dx)) hit = true;
-        if (this.currentCheckpoint === 3 && dx < -Math.abs(dy)) hit = true;
+        // Diagonal Regions (Anti-Clockwise):
+        // 0: Right (dx > |dy|)
+        // 1: Top (dy < -|dx|)
+        // 2: Left (dx < -|dy|)
+        // 3: Bottom (dy > |dx|) - Lap completes at Black Stone corner
+        if (this.currentCheckpoint === 0 && dx > Math.abs(dy)) hit = true;
+        if (this.currentCheckpoint === 1 && dy < -Math.abs(dx)) hit = true;
+        if (this.currentCheckpoint === 2 && dx < -Math.abs(dy)) hit = true;
+        if (this.currentCheckpoint === 3 && dy > Math.abs(dx)) hit = true;
 
         if (hit) {
             this.currentCheckpoint++;
@@ -1732,7 +1789,9 @@ class StageFarewell extends Stage {
     }
     draw(renderer) {
         renderer.drawMarbleFloor(this.mapW, this.mapH);
+        renderer.drawMosqueArches(this.mapW);
         renderer.drawKaaba(this.kaaba.x, this.kaaba.y);
+        renderer.drawMaqamIbrahim(this.maqam.x, this.maqam.y);
         if (this.laps >= this.maxLaps) {
             for (let c of this.confetti) {
                 renderer.rect(c.x, c.y, 3, 3, c.color);
