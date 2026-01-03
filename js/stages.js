@@ -981,13 +981,29 @@ class StageJamarat extends Stage {
     }
     update() {
         if (this.game.input.isJustPressed('Space') && this.stonesThrown < this.target) {
-            this.projectiles.push({
-                x: this.game.player.x + 8,
-                y: this.game.player.y + 8,
-                vx: 2, vy: -2,
-                target: this.pillars[2]
-            });
-            this.game.audio.playThrow();
+            // Find nearest pillar
+            let targetPillar = null;
+            let minDist = 1000;
+            const p = this.game.player;
+            for (let pillar of this.pillars) {
+                let dx = (pillar.x + pillar.w / 2) - (p.x + 8);
+                let dy = (pillar.y + pillar.h / 2) - (p.y + 8);
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150 && dist < minDist) {
+                    minDist = dist;
+                    targetPillar = pillar;
+                }
+            }
+
+            if (targetPillar) {
+                this.projectiles.push({
+                    x: this.game.player.x + 8,
+                    y: this.game.player.y + 8,
+                    target: targetPillar
+                });
+                this.game.audio.playThrow();
+                this.game.ui.setMessage("Allahu Akbar!");
+            }
         }
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             let p = this.projectiles[i];
@@ -997,19 +1013,25 @@ class StageJamarat extends Stage {
             p.y += (ty - p.y) * 0.1;
             if (Math.abs(p.x - tx) < 5 && Math.abs(p.y - ty) < 5) {
                 this.projectiles.splice(i, 1);
-                this.stonesThrown++;
-                this.game.audio.playImpact();
-                this.game.ui.setHUD(`Thrown: ${this.stonesThrown}/${this.target}`);
-                if (this.stonesThrown >= this.target && !this.completed) {
-                    this.completed = true;
-                    this.game.audio.playStageComplete();
-                    this.game.ui.setMessage("Stoning complete. Proceed to Sacrifice.");
-                    setTimeout(() => {
-                        this.game.changeStage(new StageCutscene(this.game, [
-                            "The big devil stoned.",
-                            "Destination: Sacrifice"
-                        ], new StageSacrifice(this.game)));
-                    }, 2000);
+
+                if (p.target === this.pillars[2]) {
+                    this.stonesThrown++;
+                    this.game.audio.playImpact();
+                    this.game.ui.setHUD(`Thrown: ${this.stonesThrown}/${this.target}`);
+                    if (this.stonesThrown >= this.target && !this.completed) {
+                        this.completed = true;
+                        this.game.audio.playStageComplete();
+                        this.game.ui.setMessage("Stoning complete. Proceed to Sacrifice.");
+                        setTimeout(() => {
+                            this.game.changeStage(new StageCutscene(this.game, [
+                                "The big shaytan has been stoned.",
+                                "Destination: Sacrifice"
+                            ], new StageSacrifice(this.game)));
+                        }, 2000);
+                    }
+                } else {
+                    this.game.audio.playSelect();
+                    this.game.ui.setMessage("Today we only stone the big shaytan (the largest pillar).");
                 }
             }
         }
@@ -1284,12 +1306,19 @@ class StageGrandMosque extends Stage {
             const cx = 200; // Center of Kaaba
             const cy = 200;
 
+            const dx = px - cx;
+            const dy = py - cy;
+
             let hit = false;
-            // Check if player is in the target quadrant/side of the center line
-            if (this.currentCheckpoint === 0 && px > cx && py > cy) hit = true; // Bottom Right
-            if (this.currentCheckpoint === 1 && px > cx && py < cy) hit = true; // Top Right
-            if (this.currentCheckpoint === 2 && px < cx && py < cy) hit = true; // Top Left
-            if (this.currentCheckpoint === 3 && px < cx && py > cy) hit = true; // Bottom Left (Finish line)
+            // Diagonal Regions:
+            // 0: Bottom (dy > |dx|)
+            // 1: Right (dx > |dy|)
+            // 2: Top (dy < -|dx|)
+            // 3: Left (dx < -|dy|) - Lap completes when returning to Black Stone area
+            if (this.currentCheckpoint === 0 && dy > Math.abs(dx)) hit = true;
+            if (this.currentCheckpoint === 1 && dx > Math.abs(dy)) hit = true;
+            if (this.currentCheckpoint === 2 && dy < -Math.abs(dx)) hit = true;
+            if (this.currentCheckpoint === 3 && dx < -Math.abs(dy)) hit = true;
 
             if (hit) {
                 this.currentCheckpoint++;
@@ -1532,6 +1561,7 @@ class StageJamaratReturn extends Stage {
                     target: targetPillar
                 });
                 this.game.audio.playThrow();
+                this.game.ui.setMessage("Allahu Akbar!");
             }
         }
 
@@ -1649,11 +1679,15 @@ class StageFarewell extends Stage {
         const cx = 200;
         const cy = 200;
 
+        const dx = px - cx;
+        const dy = py - cy;
+
         let hit = false;
-        if (this.currentCheckpoint === 0 && px > cx && py > cy) hit = true; // BR
-        if (this.currentCheckpoint === 1 && px > cx && py < cy) hit = true; // TR
-        if (this.currentCheckpoint === 2 && px < cx && py < cy) hit = true; // TL
-        if (this.currentCheckpoint === 3 && px < cx && py > cy) hit = true; // BL
+        // Diagonal Regions
+        if (this.currentCheckpoint === 0 && dy > Math.abs(dx)) hit = true;
+        if (this.currentCheckpoint === 1 && dx > Math.abs(dy)) hit = true;
+        if (this.currentCheckpoint === 2 && dy < -Math.abs(dx)) hit = true;
+        if (this.currentCheckpoint === 3 && dx < -Math.abs(dy)) hit = true;
 
         if (hit) {
             this.currentCheckpoint++;
