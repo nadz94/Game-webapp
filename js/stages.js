@@ -477,8 +477,8 @@ class StageMina extends Stage {
     }
 
     enter() {
-        this.game.player.x = 10;
-        this.game.player.y = 10;
+        this.game.player.x = 100;
+        this.game.player.y = 100;
         this.game.ui.setMessage(this.mainMessage);
         this.game.ui.setHUD(`Prayers: ${this.prayers}/${this.maxPrayers}`);
     }
@@ -791,8 +791,8 @@ class StageMuzdalifah extends Stage {
         this.zzzTime = 0;
     }
     enter() {
-        this.game.player.x = 20;
-        this.game.player.y = 100; // Start on ground
+        this.game.player.x = 150;
+        this.game.player.y = 250; // Start on ground
         this.game.ui.setMessage(`Stage 4: Muzdalifah. Rest under the stars. ${this.getPrompt("Hold SPACE", "Hold A")} to sleep.`);
         this.game.ui.setHUD("Sleep: 0%");
     }
@@ -975,7 +975,7 @@ class StageJamarat extends Stage {
     }
     enter() {
         this.game.player.x = 10;
-        this.game.player.y = 250;
+        this.game.player.y = 200;
         this.game.ui.setMessage(`Stage 5: Jamarat al-Aqaba (10th Dhul Hijjah). Throw 7 stones at the LARGEST pillar (${this.getPrompt("SPACE", "A")}).`);
         this.game.ui.setHUD(`Thrown: 0/${this.target}`);
     }
@@ -1479,8 +1479,8 @@ class StageMinaReturn extends Stage {
         this.zzzTime = 0;
     }
     enter() {
-        this.game.player.x = 10;
-        this.game.player.y = 10;
+        this.game.player.x = 100;
+        this.game.player.y = 100;
         this.game.ui.setMessage(`Night ${this.night}: Mina. Find a tent and ${this.getPrompt("hold SPACE", "hold A")} to sleep.`);
         this.game.ui.setHUD("Sleep: 0%");
     }
@@ -1575,8 +1575,8 @@ class StageJamaratReturn extends Stage {
         this.targetStones = 7;
     }
     enter() {
-        this.game.player.x = 10;
-        this.game.player.y = 250;
+        this.game.player.x = 20;
+        this.game.player.y = 150;
         this.game.ui.setMessage(`Day ${this.day}: Jamarat. Stone pillars in ORDER: Small -> Medium -> Large (7 each).`);
         this.updateHUD();
     }
