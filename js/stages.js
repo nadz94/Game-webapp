@@ -792,7 +792,7 @@ class StageMuzdalifah extends Stage {
     }
     enter() {
         this.game.player.x = 150;
-        this.game.player.y = 250; // Start on ground
+        this.game.player.y = 150; // Start on ground
         this.game.ui.setMessage(`Stage 4: Muzdalifah. Rest under the stars. ${this.getPrompt("Hold SPACE", "Hold A")} to sleep.`);
         this.game.ui.setHUD("Sleep: 0%");
     }
@@ -1329,7 +1329,7 @@ class StageGrandMosque extends Stage {
                 this.tawafStartDialogueTriggered = true;
                 this.isDialoguePaused = true;
                 this.game.player.pose = 'interact';
-                this.game.ui.setMessage("Bismillahi Allahu Akbar. (Press SPACE to continue)");
+                this.game.ui.setMessage(`Bismillahi Allahu Akbar. (${this.getPrompt("SPACE", "A")} to continue)`);
                 this.game.audio.playSelect();
                 return;
             }
