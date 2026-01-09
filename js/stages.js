@@ -894,7 +894,7 @@ class StageMuzdalifah extends Stage {
 
         // Sleep Phase Visuals
         if (this.phase === 'sleep') {
-            if (this.game.input.isDown('Space')) {
+            if (this.game.player.pose === 'sleep') {
                 renderer.rect(this.game.player.x, this.game.player.y + 16, 16, 4, '#444'); // Mat
 
                 // Animated Zzz - appear one by one and drift up
@@ -905,14 +905,17 @@ class StageMuzdalifah extends Stage {
                 const drift = (this.zzzTime % 20) * 0.3; // Drift up over 20 frames
 
                 // Position ZZZ above the sleeping character's head
+                const sx = Math.floor(this.game.player.x - renderer.camera.x);
+                const sy = Math.floor(this.game.player.y - renderer.camera.y);
+
                 if (cycle >= 0) {
-                    renderer.ctx.fillText('Z', this.game.player.x + 4, this.game.player.y - 19 - drift);
+                    renderer.ctx.fillText('Z', sx + 4, sy - 7 - drift);
                 }
                 if (cycle >= 1) {
-                    renderer.ctx.fillText('z', this.game.player.x + 10, this.game.player.y - 21 - drift);
+                    renderer.ctx.fillText('z', sx + 10, sy - 9 - drift);
                 }
                 if (cycle >= 2) {
-                    renderer.ctx.fillText('z', this.game.player.x + 16, this.game.player.y - 23 - drift);
+                    renderer.ctx.fillText('z', sx + 16, sy - 11 - drift);
                 }
             } else {
                 this.game.player.pose = 'stand';
@@ -1534,16 +1537,18 @@ class StageMinaReturn extends Stage {
             renderer.drawTent(t.x, t.y);
         }
 
-        // Draw player sleeping if space held
-        if (this.game.input.isDown('Space')) {
+        // Draw player sleeping if pose is sleep
+        if (this.game.player.pose === 'sleep') {
             // Zzz animation
             renderer.ctx.fillStyle = '#fff';
             renderer.ctx.font = '8px "Press Start 2P"';
             const cycle = Math.floor(this.zzzTime / 20) % 3;
             const drift = (this.zzzTime % 20) * 0.3;
-            if (cycle >= 0) renderer.ctx.fillText('Z', this.game.player.x + 4, this.game.player.y - 19 - drift);
-            if (cycle >= 1) renderer.ctx.fillText('z', this.game.player.x + 10, this.game.player.y - 21 - drift);
-            if (cycle >= 2) renderer.ctx.fillText('z', this.game.player.x + 16, this.game.player.y - 23 - drift);
+            const sx = Math.floor(this.game.player.x - renderer.camera.x);
+            const sy = Math.floor(this.game.player.y - renderer.camera.y);
+            if (cycle >= 0) renderer.ctx.fillText('Z', sx + 4, sy - 7 - drift);
+            if (cycle >= 1) renderer.ctx.fillText('z', sx + 10, sy - 9 - drift);
+            if (cycle >= 2) renderer.ctx.fillText('z', sx + 16, sy - 11 - drift);
         }
     }
 }
@@ -1757,7 +1762,7 @@ class StageFarewell extends Stage {
             this.tawafStartDialogueTriggered = true;
             this.isDialoguePaused = true;
             this.game.player.pose = 'interact';
-            this.game.ui.setMessage("Bismillahi Allahu Akbar. (Press SPACE to continue)");
+            this.game.ui.setMessage(`Bismillahi Allahu Akbar. (${this.getPrompt("SPACE", "A")} to continue)`);
             this.game.audio.playSelect();
             return;
         }
