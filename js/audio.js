@@ -31,6 +31,7 @@ class AudioManager {
     constructor() {
         this.ctx = null;
         this.initialized = false;
+        this.poolsPrimed = false;
 
         // Initialize Sound Pools for frequent sounds
         this.pools = {
@@ -46,6 +47,38 @@ class AudioManager {
         };
         this.sounds.bus.loop = true;
     }
+
+    // Prime all HTML Audio pools for mobile (must be called during user gesture)
+    primeAudioPools() {
+        if (this.poolsPrimed) return;
+        this.poolsPrimed = true;
+
+        // Play each pool sound silently to unlock on mobile
+        for (const key in this.pools) {
+            const pool = this.pools[key];
+            for (const audio of pool.pool) {
+                audio.volume = 0;
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1;
+                }).catch(() => { });
+            }
+        }
+
+        // Also prime single-instance sounds
+        for (const key in this.sounds) {
+            const audio = this.sounds[key];
+            const originalVolume = audio.volume;
+            audio.volume = 0;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.volume = originalVolume;
+            }).catch(() => { });
+        }
+    }
+
 
     // Aggressive Resume: Call this on ANY user interaction
     resumeContext() {
@@ -64,6 +97,9 @@ class AudioManager {
                 // Success
             }).catch(e => console.warn('Audio resume failed', e));
         }
+
+        // Prime HTML Audio pools on first interaction (mobile requirement)
+        this.primeAudioPools();
 
         // Always try to wake up the engine with a silent oscillator
         this.tryWakeUp();

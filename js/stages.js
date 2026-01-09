@@ -15,6 +15,26 @@ class Stage {
     getPrompt(desktopAction = "Press SPACE", mobileAction = "Tap A") {
         return isMobile() ? mobileAction : desktopAction;
     }
+
+    splitMessage(msg, limit) {
+        if (!limit) {
+            limit = isMobile() ? 70 : 120; // Fewer characters on mobile to ensure it fits
+        }
+        if (msg.length <= limit) return [msg];
+        const chunks = [];
+        let words = msg.split(' ');
+        let current = "";
+        for (let word of words) {
+            if ((current + " " + word).length > limit) {
+                chunks.push(current.trim());
+                current = word;
+            } else {
+                current += (current === "" ? "" : " ") + word;
+            }
+        }
+        if (current) chunks.push(current.trim());
+        return chunks;
+    }
 }
 
 class StageIntro extends Stage {
@@ -459,22 +479,6 @@ class StageMina extends Stage {
         this.solids = [];
     }
 
-    splitMessage(msg, limit = 80) {
-        if (msg.length <= limit) return [msg];
-        const chunks = [];
-        let words = msg.split(' ');
-        let current = "";
-        for (let word of words) {
-            if ((current + " " + word).length > limit) {
-                chunks.push(current.trim());
-                current = word;
-            } else {
-                current += (current === "" ? "" : " ") + word;
-            }
-        }
-        if (current) chunks.push(current.trim());
-        return chunks;
-    }
 
     enter() {
         this.game.player.x = 100;
@@ -638,22 +642,6 @@ class StageArafah extends Stage {
         this.npcChunkIndex = 0;
     }
 
-    splitMessage(msg, limit = 80) {
-        if (msg.length <= limit) return [msg];
-        const chunks = [];
-        let words = msg.split(' ');
-        let current = "";
-        for (let word of words) {
-            if ((current + " " + word).length > limit) {
-                chunks.push(current.trim());
-                current = word;
-            } else {
-                current += (current === "" ? "" : " ") + word;
-            }
-        }
-        if (current) chunks.push(current.trim());
-        return chunks;
-    }
     enter() {
         this.game.player.x = 10;
         this.game.player.y = 250;

@@ -69,15 +69,36 @@ canvas {
 }
 
 #message-box {
-    font-size: 12px;
-    line-height: 18px;
-    /* Fixed line height (1.5 * 12px) */
-    height: 54px;
-    /* Fixed height for 3 lines (18 * 3) */
+    font-size: 11px;
+    /* Slightly smaller base font */
+    line-height: 16px;
+    height: 48px;
+    /* 3 lines of 16px */
     color: #fff;
     text-shadow: 1px 1px 0 #000;
     padding-right: 20px;
     overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+/* Mobile Adjustments */
+@media screen and (max-width: 600px) {
+    #ui-layer {
+        height: auto;
+        min-height: 80px;
+        padding: 10px;
+    }
+
+    #message-box {
+        font-size: 9px;
+        line-height: 14px;
+        height: 56px;
+        /* 4 lines of 14px for more space on mobile */
+    }
+
+    #hud {
+        font-size: 8px;
+    }
 }
 
 #hud {
