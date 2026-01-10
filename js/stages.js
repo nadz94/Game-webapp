@@ -41,65 +41,29 @@ class StageAudioConsent extends Stage {
     constructor(game) {
         super(game);
         this.showPlayer = false;
+        this.selectedIndex = 0; // 0: YES, 1: NO
+        this.options = ["YES, ENABLE", "NO, SILENCE"];
     }
     enter() {
-        this.game.ui.setMessage("Enable Audio?");
+        this.game.ui.setMessage("Use Arrows to Select, SPACE/A to Confirm");
         this.game.ui.showBox(false);
         this.game.ui.setHUD("");
     }
     update() {
-        // Desktop: Y/N
-        // Mobile: Tap left/right side of screen or specific buttons?
-        // For simplicity, let's use SPACE for YES and Shift/Z for NO, or just simple prompts
-        // Actually, let's make it simpler: "Press SPACE/Tap Screen to Enable Audio". 
-        // Wait, the user asked for a choice. "ask the player to decide whether to turn on audio"
-        // Let's implement Y/N for desktop, and for mobile maybe we can just say "Tap Top for Yes, Bottom for No"?
-        // Or better: "Press Y for YES, N for NO". On mobile virtual keyboard might not be there.
-        // Let's stick to a simple toggle or just two distinctive inputs if possible.
-        // Given the constraints of the current input system (Input class), we might only have mapped keys.
-        // Let's look at Input class later. For now, let's assume we can map interaction.
-        // A safer bet for mobile/desktop unified is:
-        // "Press SPACE/Tap for Audio"
-        // "Press M/Hold for Silent" -> complex.
-        // Let's just do:
-        // "Enable Audio?"
-        // [Y] YES   [N] NO
-
-        if (this.game.input.isJustPressed('KeyY')) {
-            this.game.audio.enable();
-            this.game.audio.playSelect(); // This will work because we just enabled it
-            this.game.changeStage(new StageIntro(this.game));
-        } else if (this.game.input.isJustPressed('KeyN')) {
-            this.game.audio.disable();
-            this.game.changeStage(new StageIntro(this.game));
+        if (this.game.input.isJustPressed('ArrowUp')) {
+            this.selectedIndex = (this.selectedIndex - 1 + this.options.length) % this.options.length;
+        }
+        if (this.game.input.isJustPressed('ArrowDown')) {
+            this.selectedIndex = (this.selectedIndex + 1) % this.options.length;
         }
 
-        // Mobile fallback if they don't have keyboard:
-        // We might need onscreen buttons or distinct touch zones. 
-        // existing Input class handles touch as "Space" (interaction).
-        // Let's allow SPACE to toggle? No, that's confusing.
-        // Let's make SPACE = Toggle, ENTER = Confirm?
-        // Or simpler: Just defaults to input click = YES. 
-        // The user specifically asked "decide whether to turn on".
-        // Let's assume for now they have a keyboard or we'll add mobile controls later.
-        // Actually, looking at the code, it's a "Game webapp", likely played on mobile too.
-        // If I can't easily detect touch zones in the current `Input` class, 
-        // I'll add a simple timer mechanic: "Hold SPACE/Touch for YES, Press/Tap for NO"?
-        // No, that's annoying.
-
-        // Let's try: "Press SPACE/Tap to Enable Audio. Press M to Mute."
         if (this.game.input.isJustPressed('Space')) {
-            this.game.audio.enable();
-            this.game.audio.playSelect();
-            this.game.changeStage(new StageIntro(this.game));
-        }
-
-        // Wait, if they assume space starts the game causing random sounds, we want to intercept that.
-        // If they just spam space, they get audio enabled. That's probably fine as a default.
-        // What if they want silent?
-        // Let's add 'M' for mute/silent. 
-        if (this.game.input.isJustPressed('KeyM')) {
-            this.game.audio.disable();
+            if (this.selectedIndex === 0) {
+                this.game.audio.enable();
+                this.game.audio.playSelect();
+            } else {
+                this.game.audio.disable();
+            }
             this.game.changeStage(new StageIntro(this.game));
         }
     }
@@ -115,16 +79,24 @@ class StageAudioConsent extends Stage {
         renderer.ctx.fillStyle = '#aaa';
         renderer.ctx.fillText("Enable Sound Effects?", LOGICAL_W / 2, 60);
 
-        renderer.ctx.fillStyle = '#fff';
-        renderer.ctx.fillText(`[${this.getPrompt("SPACE", "TAP")}] YES, ENABLE`, LOGICAL_W / 2, 90);
+        // Options
+        renderer.ctx.font = '4px "Press Start 2P"';
+        for (let i = 0; i < this.options.length; i++) {
+            const isSelected = this.selectedIndex === i;
+            const y = 90 + i * 20;
 
-        renderer.ctx.fillStyle = '#888';
-        renderer.ctx.fillText(`[M] NO, SILENCE`, LOGICAL_W / 2, 110);
-
-        if (isMobile()) {
-            renderer.ctx.font = '3px "Press Start 2P"';
-            renderer.ctx.fillText("(Tap to Enable)", LOGICAL_W / 2, 130);
+            if (isSelected) {
+                renderer.ctx.fillStyle = '#fff';
+                renderer.ctx.fillText(`> ${this.options[i]} <`, LOGICAL_W / 2, y);
+            } else {
+                renderer.ctx.fillStyle = '#666';
+                renderer.ctx.fillText(this.options[i], LOGICAL_W / 2, y);
+            }
         }
+
+        renderer.ctx.font = '3px "Press Start 2P"';
+        renderer.ctx.fillStyle = '#444';
+        renderer.ctx.fillText(this.getPrompt("[ARROWS] TO SELECT, [SPACE] TO CONFIRM", "[ARROWS] TO SELECT, [A] TO CONFIRM"), LOGICAL_W / 2, LOGICAL_H - 20);
 
         renderer.ctx.textAlign = 'left';
     }
