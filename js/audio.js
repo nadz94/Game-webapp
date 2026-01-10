@@ -106,7 +106,8 @@ class AudioManager {
 
     // Aggressive Resume: Call this on ANY user interaction
     resumeContext() {
-        if (!this.enabled) return;
+        // if (!this.enabled) return; // REMOVED: Allow resume to happen for warm-up
+
 
         if (!this.ctx) {
             try {

@@ -13,8 +13,8 @@ class Game {
         this.player = new Player(10, 10);
         this.audio = new AudioManager();
 
-        // Mobile audio unlock: init handled by StageAudioConsent now
-        // this.input.onInteraction = () => this.audio.resumeContext();
+        // Mobile audio unlock: init handled by StageAudioConsent now, but we need this for valid user gesture capture
+        this.input.onInteraction = () => this.audio.resumeContext();
 
         this.ui = {
             setMessage: (msg) => {
