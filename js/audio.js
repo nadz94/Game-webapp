@@ -66,33 +66,40 @@ class AudioManager {
     }
 
     // Prime all HTML Audio pools for mobile (must be called during user gesture)
+    // Prime all HTML Audio pools for mobile (must be called during user gesture)
     primeAudioPools() {
+        // Platform Constraint: Explicitly note that this fix is only for mobile browsers (iOS/Android Safari/Chrome).
+        // The "unlocking" logic is bypassed on desktop where Autoplay Policies are less restrictive.
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (window.isMobile && window.isMobile());
+        if (!isMobile) return;
+
         if (this.poolsPrimed) return;
         this.poolsPrimed = true;
+
+        const unlock = (audio) => {
+            // Silent Warm-up: muted play/pause cycle
+            const originalMuted = audio.muted;
+            audio.muted = true;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.muted = originalMuted; // Restore original mute state
+            }).catch(e => {
+                console.warn('Audio unlock failed', e);
+            });
+        };
 
         // Play each pool sound silently to unlock on mobile
         for (const key in this.pools) {
             const pool = this.pools[key];
             for (const audio of pool.pool) {
-                audio.volume = 0;
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.volume = 1;
-                }).catch(() => { });
+                unlock(audio);
             }
         }
 
         // Also prime single-instance sounds
         for (const key in this.sounds) {
-            const audio = this.sounds[key];
-            const originalVolume = audio.volume;
-            audio.volume = 0;
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.volume = originalVolume;
-            }).catch(() => { });
+            unlock(this.sounds[key]);
         }
     }
 
