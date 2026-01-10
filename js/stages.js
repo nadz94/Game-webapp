@@ -788,7 +788,7 @@ class StageMuzdalifah extends Stage {
         if (this.phase === 'sleep') {
             if (this.game.input.isDown('Space')) {
                 this.game.player.pose = 'sleep';
-                this.sleepProgress += 0.5;
+                this.sleepProgress += 0.75;
                 if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
                 this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
 
@@ -1289,6 +1289,7 @@ class StageGrandMosque extends Stage {
         this.game.player.y = 185;
         this.game.player.isIhram = false; // Transition to Thobe and Hat
         this.tawafStartDialogueTriggered = false;
+        this.saiStartDialogueTriggered = false;
         this.isDialoguePaused = false;
         this.game.ui.setMessage("Stage 7: Grand Mosque. Perform Tawaf (7 laps Anti-Clockwise).");
         this.game.ui.setHUD(`Tawaf: 0/${this.maxLaps}`);
@@ -1363,6 +1364,14 @@ class StageGrandMosque extends Stage {
                 if (!this.saiStarted) {
                     // First visit to Safa (Start point)
                     if (t === this.safa) {
+                        if (!this.saiStartDialogueTriggered) {
+                            this.saiStartDialogueTriggered = true;
+                            this.isDialoguePaused = true;
+                            this.game.player.pose = 'interact';
+                            this.game.ui.setMessage(`"Innas-safaa wal-marwata min sha'aa 'irillah" (${this.getPrompt("SPACE", "A")} to continue)`);
+                            this.game.audio.playSelect();
+                            return;
+                        }
                         this.saiStarted = true;
                         this.targetHill = this.marwa;
                         this.game.ui.setMessage("Sa'i started. Walk to Marwa.");
@@ -1489,7 +1498,7 @@ class StageMinaReturn extends Stage {
 
         if (nearTent && this.game.input.isDown('Space') && !this.complete) {
             this.game.player.pose = 'sleep';
-            this.sleepProgress += 0.5;
+            this.sleepProgress += 0.75;
             if (this.sleepProgress > this.maxSleep) this.sleepProgress = this.maxSleep;
             this.game.ui.setHUD(`Sleep: ${Math.floor(this.sleepProgress)}%`);
             this.zzzTime++;
