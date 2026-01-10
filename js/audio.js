@@ -32,6 +32,7 @@ class AudioManager {
         this.ctx = null;
         this.initialized = false;
         this.poolsPrimed = false;
+        this.enabled = false;
 
         // Initialize Sound Pools for frequent sounds
         this.pools = {
@@ -46,6 +47,22 @@ class AudioManager {
             bus: new Audio('sounds/bus-engine.mp3')
         };
         this.sounds.bus.loop = true;
+    }
+
+    // Explicitly enable audio (called from Consent Screen)
+    enable() {
+        if (this.enabled) return;
+        this.enabled = true;
+        this.resumeContext();
+    }
+
+    // Explicitly disable audio
+    disable() {
+        this.enabled = false;
+        if (this.ctx && this.ctx.state === 'running') {
+            this.ctx.suspend();
+        }
+        this.stopBusEngine();
     }
 
     // Prime all HTML Audio pools for mobile (must be called during user gesture)
@@ -82,6 +99,8 @@ class AudioManager {
 
     // Aggressive Resume: Call this on ANY user interaction
     resumeContext() {
+        if (!this.enabled) return;
+
         if (!this.ctx) {
             try {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -107,7 +126,7 @@ class AudioManager {
 
     // Alias for compatibility
     init() {
-        this.resumeContext();
+        // No-op, managed by enable()
     }
 
     tryWakeUp() {
@@ -125,7 +144,7 @@ class AudioManager {
 
     // Play a simple tone
     playTone(frequency, duration, type = 'square', volume = 0.15) {
-        if (!this.initialized) return;
+        if (!this.enabled || !this.initialized) return;
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const osc = this.ctx.createOscillator();
@@ -146,7 +165,7 @@ class AudioManager {
 
     // Play noise burst
     playNoise(duration, volume = 0.1, frequency = 1000) {
-        if (!this.initialized) return;
+        if (!this.enabled || !this.initialized) return;
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const bufferSize = this.ctx.sampleRate * duration;
@@ -181,6 +200,7 @@ class AudioManager {
 
     // Footstep - procedural noise
     playFootstep() {
+        if (!this.enabled) return;
         // "Mario-like" subtle tap: Low pass, short duration
         // Increased volume to 0.14
         this.playNoise(0.04, 0.18, 350);
@@ -188,18 +208,20 @@ class AudioManager {
 
     // Bus engine - loop mp3
     startBusEngine() {
+        if (!this.enabled) return;
         this.sounds.bus.volume = 0.5;
         this.sounds.bus.play().catch(e => console.log('Bus audio failed', e));
     }
 
     stopBusEngine() {
+        if (!this.enabled) return;
         this.sounds.bus.pause();
         this.sounds.bus.currentTime = 0;
     }
 
     // Throw - rising whoosh
     playThrow() {
-        if (!this.initialized) return;
+        if (!this.enabled || !this.initialized) return;
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const osc = this.ctx.createOscillator();
@@ -221,33 +243,38 @@ class AudioManager {
 
     // Impact - rock impact mp3
     playImpact() {
+        if (!this.enabled) return;
         this.pools.impact.play(0.6);
     }
 
     // Collect - bright pickup chime
     playCollect() {
+        if (!this.enabled) return;
         this.playTone(880, 0.08, 'square', 0.15);
-        setTimeout(() => this.playTone(1320, 0.1, 'square', 0.1), 50);
+        setTimeout(() => { if (this.enabled) this.playTone(1320, 0.1, 'square', 0.1) }, 50);
     }
 
     // Prayer/Sleep complete - gentle ascending chime
     playComplete() {
+        if (!this.enabled) return;
         const notes = [523, 659, 784]; // C5, E5, G5
         notes.forEach((note, i) => {
-            setTimeout(() => this.playTone(note, 0.2, 'triangle', 0.15), i * 100);
+            setTimeout(() => { if (this.enabled) this.playTone(note, 0.2, 'triangle', 0.15) }, i * 100);
         });
     }
 
     // Stage complete - short jingle
     playStageComplete() {
+        if (!this.enabled) return;
         const notes = [392, 523, 659, 784]; // G4, C5, E5, G5
         notes.forEach((note, i) => {
-            setTimeout(() => this.playTone(note, 0.15, 'square', 0.15), i * 80);
+            setTimeout(() => { if (this.enabled) this.playTone(note, 0.15, 'square', 0.15) }, i * 80);
         });
     }
 
     // Celebration - victory fanfare
     playCelebration() {
+        if (!this.enabled) return;
         const melody = [
             { note: 523, time: 0 },      // C5
             { note: 523, time: 100 },    // C5
@@ -258,27 +285,31 @@ class AudioManager {
         ];
 
         melody.forEach(({ note, time }) => {
-            setTimeout(() => this.playTone(note, 0.2, 'square', 0.15), time);
+            setTimeout(() => { if (this.enabled) this.playTone(note, 0.2, 'square', 0.15) }, time);
         });
     }
 
     // Sacrifice - sacrifice mp3
     playSacrifice() {
+        if (!this.enabled) return;
         this.pools.sacrifice.play(0.6);
     }
 
     // Hair trim - barber clipper mp3
     playTrim() {
+        if (!this.enabled) return;
         return this.pools.trim.play(0.6);
     }
 
     // Sheep sound - new
     playSheep() {
+        if (!this.enabled) return;
         this.pools.sheep.play(0.6);
     }
 
     // UI click/select
     playSelect() {
+        if (!this.enabled) return;
         this.playTone(440, 0.05, 'square', 0.1);
     }
 }

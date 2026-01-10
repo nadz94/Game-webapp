@@ -13,9 +13,8 @@ class Game {
         this.player = new Player(10, 10);
         this.audio = new AudioManager();
 
-        // Mobile audio unlock: init on first interaction
-        // Mobile audio: Attempt to resume context on every interaction
-        this.input.onInteraction = () => this.audio.resumeContext();
+        // Mobile audio unlock: init handled by StageAudioConsent now
+        // this.input.onInteraction = () => this.audio.resumeContext();
 
         this.ui = {
             setMessage: (msg) => {
@@ -38,7 +37,7 @@ class Game {
             }
         };
 
-        this.currentStage = new StageIntro(this);
+        this.currentStage = new StageAudioConsent(this);
         this.currentStage.enter();
 
         this.lastTime = 0;
